@@ -57,10 +57,12 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@adonisjs/ally": "^5.0.2",
     "@adonisjs/auth": "^9.2.0",
     "@adonisjs/core": "^6.6.0",
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/lucid": "^20.5.1",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@vinejs/vine": "^2.0.0",
     "luxon": "^3.4.4",
     "pg": "^8.11.5",
