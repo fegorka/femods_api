@@ -21,3 +21,8 @@ router
 router
   .get('auth/:provider/callback', '#controllers/auth_social_providers_controller.handleCallback')
   .where('provider', /discord|github/)
+
+// TODO: need added token guard, not params, this just for test
+//router
+//  .get('auth/tokensRevoke/:userId', '#controllers/auth_social_providers_controller.tokensRevoke')
+//  .where('userId', /[a-z0-9]{24}/)

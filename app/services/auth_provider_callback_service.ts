@@ -14,7 +14,6 @@ export default class AuthProviderCallBackService {
     const findUser = {
       provider: provider.toLowerCase(),
       provider_id: providerUserData.id,
-      // email: providerUserData.email as string,
     }
 
     const userDetails = {
@@ -26,23 +25,6 @@ export default class AuthProviderCallBackService {
       email: providerUserData.email as string,
     }
 
-    //const user = await User.updateOrCreate(findUser, userDetails)
-    //return await User.accessTokens.create(user)
-    return await this.refreshAndReturnUserToken(await User.updateOrCreate(findUser, userDetails))
-  }
-
-  private static async refreshAndReturnUserToken(user: User): Promise<AccessToken> {
-    // TODO: need checking like if token exist – delete, because we can't create more then 1 token for 1 user
-    /* if (
-      (await database
-        .from('access_tokens')
-        .where('tokenable_id', user.id)
-        .select('id')
-        .firstOrFail()) !== null
-    ) {
-      await database.from('acess_tokens').where('tokenable_id', user.id).delete()
-    }
-    */
-    return await User.accessTokens.create(user)
+    return await User.accessTokens.create(await User.updateOrCreate(findUser, userDetails))
   }
 }
