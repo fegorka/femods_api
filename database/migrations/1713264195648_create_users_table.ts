@@ -1,12 +1,11 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
-import { createId } from '@paralleldrive/cuid2'
 
 export default class extends BaseSchema {
   protected tableName = 'users'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.string('id').notNullable().primary().defaultTo(createId())
+      table.string('id').notNullable().primary()
 
       table.string('name').notNullable()
       table.string('public_name').notNullable().unique()

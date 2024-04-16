@@ -1,9 +1,10 @@
 import { DateTime } from 'luxon'
 import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
+import { cuid } from '@adonisjs/core/helpers'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -12,7 +13,7 @@ const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
 
 export default class User extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
 
   @column()
   declare avatarUrl: string
@@ -38,17 +39,22 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 
+  @beforeCreate()
+  static async addIdHook(user: User) {
+    user.id = cuid()
+  }
+
   static accessTokens = DbAccessTokensProvider.forModel(User, {
     expiresIn: '30 days',
     prefix: 'fefo_',
-    tokenSecretLength: 40,
+    tokenSecretLength: 60,
   })
 
   //  static get primaryKey() {
   //    return 'id'
   //  }
 
-  static get incrementing() {
-    return false
-  }
+  //  static get incrementing() {
+  //    return false
+  //  }
 }

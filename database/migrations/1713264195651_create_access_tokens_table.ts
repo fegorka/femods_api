@@ -1,12 +1,11 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
-import { createId } from '@paralleldrive/cuid2'
 
 export default class extends BaseSchema {
   protected tableName = 'auth_access_tokens'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.string('id').notNullable().primary().defaultTo(createId())
+      table.increments('id')
       table
         .string('tokenable_id')
         .notNullable()
@@ -14,7 +13,6 @@ export default class extends BaseSchema {
         .references('id')
         .inTable('users')
         .onDelete('CASCADE')
-
       table.string('type').notNullable()
       table.string('name').nullable()
       table.string('hash').notNullable()
