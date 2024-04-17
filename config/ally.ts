@@ -1,5 +1,7 @@
 import env from '#start/env'
 import { defineConfig, services } from '@adonisjs/ally'
+import { DiscordDriver } from '@adonisjs/ally/drivers/discord'
+import { GithubDriver } from '@adonisjs/ally/drivers/github'
 
 const allyConfig = defineConfig({
   discord: services.discord({
@@ -20,5 +22,6 @@ export default allyConfig
 
 declare module '@adonisjs/ally/types' {
   type SocialProviderNames = 'discord' | 'github'
+  type SocialProviderDrivers = DiscordDriver | GithubDriver
   interface SocialProviders extends InferSocialProviders<typeof allyConfig> {}
 }
