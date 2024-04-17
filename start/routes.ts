@@ -8,6 +8,9 @@
 */
 
 import router from '@adonisjs/core/services/router'
+import { middleware } from '#start/kernel'
+
+const providers: RegExp = /discord|github/
 
 router.get('/', async () => {
   return {
@@ -16,13 +19,28 @@ router.get('/', async () => {
 })
 
 router
-  .get('auth/:provider/redirect', '#controllers/auth_social_providers_controller.redirect')
-  .where('provider', /discord|github/)
+  .get(
+    'auth/:provider/redirect',
+    '#controllers/auth_social_providers_controller.loginProviderRedirect'
+  )
+  .where('provider', providers)
 router
-  .get('auth/:provider/callback', '#controllers/auth_social_providers_controller.handleCallback')
-  .where('provider', /discord|github/)
+  .get(
+    'auth/:provider/callback',
+    '#controllers/auth_social_providers_controller.loginProviderHandleCallback'
+  )
+  .where('provider', providers)
 
-// TODO: need added token guard, not params, this just for test
-//router
-//  .get('auth/tokensRevoke/:userId', '#controllers/auth_social_providers_controller.tokensRevoke')
-//  .where('userId', /[a-z0-9]{24}/)
+router.post('auth/logout/self', '#controllers/auth_social_providers_controller.logoutSelf').use(
+  middleware.auth({
+    guards: ['api'],
+  })
+)
+
+router
+  .post('auth/logout/everywhere', '#controllers/auth_social_providers_controller.logoutEverywhere')
+  .use(
+    middleware.auth({
+      guards: ['api'],
+    })
+  )

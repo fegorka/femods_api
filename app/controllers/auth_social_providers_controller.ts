@@ -5,38 +5,31 @@ import User from '#models/user'
 import { AccessToken } from '@adonisjs/auth/access_tokens'
 
 export default class AuthSocialProvidersController {
-  async redirect({ ally, params }: HttpContext) {
+  async loginProviderRedirect({ ally, params }: HttpContext) {
     return ally.use(params.provider as SocialProviderNames).redirect()
   }
 
-  async handleCallback({ ally, params }: HttpContext) {
+  async loginProviderHandleCallback({ ally, params }: HttpContext) {
     const provider: SocialProviderNames = params.provider
     const providerUser = ally.use(provider)
-
-    if (providerUser.accessDenied()) {
-      return 'Access was denied'
-    }
-    if (providerUser.stateMisMatch()) {
-      return 'Request expired. try again'
-    }
-    if (providerUser.hasError()) {
-      return providerUser.getError()
-    }
-
+    if (providerUser.accessDenied()) return 'Access was denied'
+    if (providerUser.stateMisMatch()) return 'Request expired. try again'
+    if (providerUser.hasError()) return providerUser.getError()
     return await AuthProviderCallBackService.updateOrCreateUserAndGiveToken(provider, providerUser)
   }
 
-  // TODO: need added token guard, not params, this just for test
-  /*
-  async tokensRevoke({ params, response }: HttpContext) {
-    const user = await User.findOrFail(params.id)
+  async logoutSelf({ auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    await User.accessTokens.delete(user, user.currentAccessToken.identifier)
+    return response.ok({ message: 'Successful logout' })
+  }
 
+  async logoutEverywhere({ auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
     const accessTokens: AccessToken[] = await User.accessTokens.all(user)
     accessTokens.map(async (token: AccessToken) => {
       await User.accessTokens.delete(user, token.identifier)
     })
-
-    return response.status(204).send('')
+    return response.ok({ message: 'Successful logout' })
   }
-  */
 }
