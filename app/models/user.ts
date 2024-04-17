@@ -16,6 +16,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare id: string
 
   @column()
+  declare public_id: string
+
+  @column()
   declare avatarUrl: string
 
   @column()
@@ -42,6 +45,11 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @beforeCreate()
   static async addIdHook(user: User) {
     user.id = cuid()
+  }
+
+  @beforeCreate()
+  static async addPublicIdHook(user: User) {
+    user.public_id = cuid()
   }
 
   static accessTokens = DbAccessTokensProvider.forModel(User, {

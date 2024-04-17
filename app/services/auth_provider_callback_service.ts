@@ -18,7 +18,6 @@ export default class AuthProviderCallBackService {
 
     const userDetails = {
       name: providerUserData.nickName as string,
-      public_name: providerUserData.name as string,
       avatar_url: providerUserData.avatarUrl as string,
       provider_id: providerUserData.id as string,
       provider: provider,
