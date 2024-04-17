@@ -4,7 +4,7 @@ import { SocialProviderNames } from '@adonisjs/ally/types'
 import AuthProviderCallBackService from '#services/auth_provider_callback_service'
 import User from '#models/user'
 
-export default class AuthSocialProvidersController {
+export default class AuthController {
   async loginProviderRedirect({ ally, params }: HttpContext) {
     return ally.use(params.provider as SocialProviderNames).redirect()
   }
