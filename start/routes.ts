@@ -19,28 +19,20 @@ router.get('/', async () => {
 })
 
 router
-  .get(
-    'auth/:provider/redirect',
-    '#controllers/auth_social_providers_controller.loginProviderRedirect'
-  )
+  .get('auth/:provider/redirect', '#controllers/auth_controller.loginProviderRedirect')
   .where('provider', providers)
 router
-  .get(
-    'auth/:provider/callback',
-    '#controllers/auth_social_providers_controller.loginProviderHandleCallback'
-  )
+  .get('auth/:provider/callback', '#controllers/auth_controller.loginProviderHandleCallback')
   .where('provider', providers)
 
-router.post('auth/logout/self', '#controllers/auth_social_providers_controller.logoutSelf').use(
+router.post('auth/logout/self', '#controllers/auth_controller.logoutSelf').use(
   middleware.auth({
     guards: ['api'],
   })
 )
 
-router
-  .post('auth/logout/everywhere', '#controllers/auth_social_providers_controller.logoutEverywhere')
-  .use(
-    middleware.auth({
-      guards: ['api'],
-    })
-  )
+router.post('auth/logout/everywhere', '#controllers/auth_controller.logoutEverywhere').use(
+  middleware.auth({
+    guards: ['api'],
+  })
+)

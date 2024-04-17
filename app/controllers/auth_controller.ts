@@ -1,8 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import AuthProviderCallBackService from '#services/auth_provider_callback_service'
-import { SocialProviderNames } from '@adonisjs/ally/types'
-import User from '#models/user'
 import { AccessToken } from '@adonisjs/auth/access_tokens'
+import { SocialProviderNames } from '@adonisjs/ally/types'
+import AuthProviderCallBackService from '#services/auth_provider_callback_service'
+import User from '#models/user'
 
 export default class AuthSocialProvidersController {
   async loginProviderRedirect({ ally, params }: HttpContext) {
