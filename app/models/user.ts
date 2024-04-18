@@ -1,17 +1,20 @@
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import hash from '@adonisjs/core/services/hash'
-import { compose } from '@adonisjs/core/helpers'
-import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
-import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
+import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { cuid } from '@adonisjs/core/helpers'
+import Pack from '#models/pack'
 
-const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
-  uids: ['email'],
-  passwordColumnName: 'password',
-})
+//import { compose } from '@adonisjs/core/helpers'
+//import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
+//import hash from '@adonisjs/core/services/hash'
+//const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
+//  uids: ['email'],
+//  passwordColumnName: 'password',
+//})
+//export default class User extends compose(BaseModel, AuthFinder) {
 
-export default class User extends compose(BaseModel, AuthFinder) {
+export default class User extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
@@ -42,14 +45,17 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 
+  @hasMany(() => Pack)
+  declare packs: HasMany<typeof Pack>
+
   @beforeCreate()
-  static async addIdHook(user: User) {
-    user.id = cuid()
+  static async assignId(instance: User) {
+    instance.id = cuid()
   }
 
   @beforeCreate()
-  static async addPublicIdHook(user: User) {
-    user.public_id = cuid()
+  static async assignPublicId(instance: User) {
+    instance.public_id = cuid()
   }
 
   static accessTokens = DbAccessTokensProvider.forModel(User, {
@@ -57,12 +63,4 @@ export default class User extends compose(BaseModel, AuthFinder) {
     prefix: 'fefo_',
     tokenSecretLength: 60,
   })
-
-  //  static get primaryKey() {
-  //    return 'id'
-  //  }
-
-  //  static get incrementing() {
-  //    return false
-  //  }
 }
