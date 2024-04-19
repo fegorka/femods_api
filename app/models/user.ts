@@ -19,7 +19,7 @@ export default class User extends BaseModel {
   declare id: string
 
   @column()
-  declare public_id: string
+  declare publicId: string
 
   @column()
   declare avatarUrl: string
@@ -28,7 +28,7 @@ export default class User extends BaseModel {
   declare name: string | null
 
   @column()
-  declare public_name: string
+  declare publicName: string | null
 
   @column()
   declare providerId: string
@@ -55,7 +55,7 @@ export default class User extends BaseModel {
 
   @beforeCreate()
   static async assignPublicId(instance: User) {
-    instance.public_id = cuid()
+    instance.publicId = cuid()
   }
 
   static accessTokens = DbAccessTokensProvider.forModel(User, {

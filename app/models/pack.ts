@@ -26,13 +26,13 @@ export default class Pack extends BaseModel {
   declare name: string
 
   @column()
-  declare publicName: string
+  declare publicName: string | null
 
   @column()
-  declare minVersion: string
+  declare minVersion: string | null
 
   @column()
-  declare maxVersion: string
+  declare maxVersion: string | null
 
   @column()
   declare totalDownloadCount: bigint

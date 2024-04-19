@@ -19,7 +19,7 @@ export default class PackItem extends BaseModel {
   declare downloadUrl: string
 
   @column()
-  declare safeStatus: 'safe' | 'unknown' | 'unsafe'
+  declare safeStatus: string
 
   @column()
   declare packItemTypeId: string
