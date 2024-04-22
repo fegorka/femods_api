@@ -15,7 +15,7 @@ export default class extends BaseSchema {
       table.string('provider')
       table.string('provider_id')
 
-      table.string('email', 254).notNullable()
+      table.string('email', 256).notNullable()
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
