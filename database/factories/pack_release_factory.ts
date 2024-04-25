@@ -10,8 +10,8 @@ export const PackReleaseFactory = factory
     const gameVersions = await GameVersion.all()
     const packs = await Pack.all()
     return {
-      gameVersionId: gameVersions[randomInt(gameVersions.length)].id,
-      packId: packs[randomInt(packs.length)].id,
+      gameVersionId: gameVersions[randomInt(gameVersions.length - 1)].id,
+      packId: packs[randomInt(packs.length - 1)].id,
     }
   })
   .relation('packItems', () => PackItemFactory)

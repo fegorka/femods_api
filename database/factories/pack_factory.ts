@@ -6,6 +6,7 @@ import { randomInt } from 'node:crypto'
 import PackModCore from '#models/pack_mod_core'
 import { cuid } from '@adonisjs/core/helpers'
 import { PackReleaseFactory } from '#database/factories/pack_release_factory'
+import Tag from '#models/tag'
 
 export const PackFactory = factory
   .define(Pack, async ({ faker }) => {
@@ -18,8 +19,8 @@ export const PackFactory = factory
       name: truncateString(faker.lorem.words({ min: 1, max: 3 }), 32),
       publicName: cuid(), // .word() no unique, uses .cuid()
 
-      packVisibleLevelId: packVisibleLevels[randomInt(packVisibleLevels.length)].id,
-      packModCoreId: packModCores[randomInt(packVisibleLevels.length)].id,
+      packVisibleLevelId: packVisibleLevels[randomInt(packVisibleLevels.length - 1)].id,
+      packModCoreId: packModCores[randomInt(packVisibleLevels.length - 1)].id,
     }
   })
   .state('withoutPublicName', (instance) => (instance.publicName = null))
