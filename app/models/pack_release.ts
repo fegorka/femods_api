@@ -5,6 +5,7 @@ import { cuid } from '@adonisjs/core/helpers'
 import GameVersion from '#models/game_version'
 import Pack from '#models/pack'
 import PackItem from '#models/pack_item'
+import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 
 export default class PackRelease extends BaseModel {
   @column({ isPrimary: true })
@@ -33,6 +34,9 @@ export default class PackRelease extends BaseModel {
 
   @hasMany(() => PackItem)
   declare packItems: HasMany<typeof PackItem>
+
+  @hasMany(() => PackPreDownloadQuestion)
+  declare preDownloadQuestions: HasMany<typeof PackPreDownloadQuestion>
 
   @beforeCreate()
   static async assignId(instance: PackRelease) {
