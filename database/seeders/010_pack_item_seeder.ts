@@ -5,5 +5,6 @@ export default class extends BaseSeeder {
   static environment = ['development']
   async run() {
     await PackItemFactory.createMany(10)
+    await PackItemFactory.with('packPreDownloadQuestions', 2).createMany(5)
   }
 }
