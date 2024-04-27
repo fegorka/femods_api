@@ -1,9 +1,10 @@
-import type { HasMany } from '@adonisjs/lucid/types/relations'
+import type { HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { cuid } from '@adonisjs/core/helpers'
 import Pack from '#models/pack'
+import Role from '#models/role'
 
 //import { compose } from '@adonisjs/core/helpers'
 //import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -47,6 +48,9 @@ export default class User extends BaseModel {
 
   @hasMany(() => Pack)
   declare packs: HasMany<typeof Pack>
+
+  @manyToMany(() => Role)
+  declare roles: ManyToMany<typeof Role>
 
   @beforeCreate()
   static async assignId(instance: User) {
