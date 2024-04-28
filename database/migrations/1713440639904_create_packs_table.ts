@@ -30,6 +30,13 @@ export default class extends BaseSchema {
         .inTable('pack_mod_cores')
         .onDelete('RESTRICT')
 
+      table
+        .string('pack_status_id')
+        .notNullable()
+        .references('id')
+        .inTable('pack_statuses')
+        .onDelete('RESTRICT')
+
       table.string('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
 
       table.timestamp('created_at')

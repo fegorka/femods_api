@@ -1,10 +1,18 @@
-import type { HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
+import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
+import {
+  BaseModel,
+  beforeCreate,
+  belongsTo,
+  column,
+  hasMany,
+  manyToMany,
+} from '@adonisjs/lucid/orm'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { cuid } from '@adonisjs/core/helpers'
 import Pack from '#models/pack'
 import Role from '#models/role'
+import UserStatus from '#models/user_status'
 
 //import { compose } from '@adonisjs/core/helpers'
 //import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -40,11 +48,17 @@ export default class User extends BaseModel {
   @column()
   declare email: string
 
+  @column()
+  declare userStatusId: string
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  @belongsTo(() => UserStatus)
+  declare userStatus: BelongsTo<typeof UserStatus>
 
   @hasMany(() => Pack)
   declare packs: HasMany<typeof Pack>

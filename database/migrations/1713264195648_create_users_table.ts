@@ -17,6 +17,13 @@ export default class extends BaseSchema {
 
       table.string('email', 256).notNullable()
 
+      table
+        .string('user_status_id')
+        .notNullable()
+        .references('id')
+        .inTable('user_statuses')
+        .onDelete('RESTRICT')
+
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
     })

@@ -14,6 +14,7 @@ import PackModCore from '#models/pack_mod_core'
 import User from '#models/user'
 import PackRelease from '#models/pack_release'
 import Tag from '#models/tag'
+import PackStatus from '#models/pack_status'
 
 export default class Pack extends BaseModel {
   @column({ isPrimary: true })
@@ -44,6 +45,9 @@ export default class Pack extends BaseModel {
   declare packModCoreId: string
 
   @column()
+  declare packStatusId: string
+
+  @column()
   declare userId: string
 
   @column.dateTime({ autoCreate: true })
@@ -57,6 +61,9 @@ export default class Pack extends BaseModel {
 
   @belongsTo(() => PackModCore)
   declare packModCore: BelongsTo<typeof PackModCore>
+
+  @belongsTo(() => PackStatus)
+  declare packStatus: BelongsTo<typeof PackStatus>
 
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
