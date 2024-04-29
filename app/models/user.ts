@@ -1,6 +1,7 @@
 import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
 import {
+  afterCreate,
   BaseModel,
   beforeCreate,
   belongsTo,
@@ -65,6 +66,18 @@ export default class User extends BaseModel {
 
   @manyToMany(() => Role)
   declare roles: ManyToMany<typeof Role>
+
+  @afterCreate()
+  static async assignRole(user: User) {
+    const defaultRole = await Role.findByOrFail({ name: 'default' })
+    await user.related('roles').attach([defaultRole.id])
+  }
+
+  @beforeCreate()
+  static async assignStatus(user: User) {
+    const defaultStatus = await UserStatus.findByOrFail({ name: 'default' })
+    user.userStatusId = defaultStatus.id
+  }
 
   @beforeCreate()
   static async assignId(instance: User) {
