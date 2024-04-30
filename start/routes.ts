@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
+const UsersController = () => import('#controllers/users_controller')
 
 const providers: RegExp = /discord|github/
 
@@ -25,14 +26,15 @@ router
   .get('auth/:provider/callback', '#controllers/auth_controller.loginProviderHandleCallback')
   .where('provider', providers)
 
-router.post('auth/logout/self', '#controllers/auth_controller.logoutSelf').use(
-  middleware.auth({
-    guards: ['api'],
-  })
-)
+router
+  .post('auth/logout/self', '#controllers/auth_controller.logoutSelf')
+  .use(middleware.auth({ guards: ['api'] }))
 
-router.post('auth/logout/everywhere', '#controllers/auth_controller.logoutEverywhere').use(
-  middleware.auth({
-    guards: ['api'],
-  })
-)
+router
+  .post('auth/logout/everywhere', '#controllers/auth_controller.logoutEverywhere')
+  .use(middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('users', UsersController)
+  .except(['create', 'edit', 'store'])
+  .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
