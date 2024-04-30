@@ -1,12 +1,9 @@
-import Role from '#models/role'
+import User from '#models/user'
 
 export default class RoleService {
-  static async userRoleCheck(roleName: string, userId: string): Promise<boolean> {
-    // неизвестно подходит ли find для поиска в пивот таблице, он будет выполнять,
-    // но просто может ВСЕГДА ПУСТОЙ массив возвращать
-    // из-за неправильного КОНФИГА ПОИСКА И ПИВОТ ТАБЛИЦЫ
-
-    const userRoles = await Role.findManyBy({ userId: userId })
-    return userRoles.some((role) => role.name === roleName)
+  static async userHaveRoleCheck(roleNames: string[], user: User | null): Promise<boolean> {
+    if (user === null) return false
+    const userRoles = await user.related('roles').query().wherePivot('user_id', user.id)
+    return userRoles.some((role) => roleNames.includes(role.name))
   }
 }
