@@ -1,8 +1,6 @@
 import factory from '@adonisjs/lucid/factories'
 import User from '#models/user'
 import { PackFactory } from '#database/factories/pack_factory'
-import UserStatus from '#models/user_status'
-import { randomInt } from 'node:crypto'
 
 export const UserFactory = factory
   .define(User, async ({ faker }) => {
