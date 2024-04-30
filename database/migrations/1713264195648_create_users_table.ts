@@ -9,7 +9,7 @@ export default class extends BaseSchema {
       table.string('public_id').notNullable().unique()
 
       table.string('name').notNullable()
-      table.string('public_name').nullable().unique()
+      table.string('public_name', 32).nullable().unique()
       table.string('avatar_url').notNullable()
 
       table.string('provider')
