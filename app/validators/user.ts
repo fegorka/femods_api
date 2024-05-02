@@ -1,5 +1,4 @@
 import vine from '@vinejs/vine'
-import { BooleanLiteral } from '@swc/core'
 
 export const updateUserValidator = vine.compile(
   vine.object({
@@ -13,19 +12,5 @@ export const updateUserValidator = vine.compile(
       .unique(async (db, value): Promise<boolean> => {
         return !(await db.from('users').where('public_name', value).first())
       }),
-  })
-)
-
-export const requestParamsIdExistUserValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine
-        .string()
-        .fixedLength(24)
-        .regex(/[0-9a-km-zA-HJ-NP-Z]+$/)
-        .exists(async (db, value): Promise<boolean> => {
-          return await db.from('users').where('id', value).first()
-        }),
-    }),
   })
 )
