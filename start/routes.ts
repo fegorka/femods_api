@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
+const PacksController = () => import('#controllers/packs_controller')
 const GameVersionsController = () => import('#controllers/game_versions_controller')
 const UsersController = () => import('#controllers/users_controller')
 
@@ -16,7 +17,7 @@ const providers: RegExp = /discord|github/
 
 router.get('/', async () => {
   return {
-    hello: 'world',
+    ping: 'pong',
   }
 })
 
@@ -44,3 +45,8 @@ router
   .resource('gameversions', GameVersionsController)
   .except(['create', 'edit'])
   .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('packs', PacksController)
+  .except(['create', 'edit'])
+  .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
