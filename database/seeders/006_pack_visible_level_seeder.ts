@@ -5,7 +5,7 @@ export default class extends BaseSeeder {
   static environment = ['production', 'development']
   async run() {
     await PackVisibleLevel.updateOrCreateMany('name', [
-      { name: 'puglic' },
+      { name: 'public' },
       { name: 'link' },
       { name: 'private' },
     ])
