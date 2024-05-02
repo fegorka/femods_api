@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
+const GameVersionsController = () => import('#controllers/game_versions_controller')
 const UsersController = () => import('#controllers/users_controller')
 
 const providers: RegExp = /discord|github/
@@ -38,3 +39,8 @@ router
   .resource('users', UsersController)
   .except(['create', 'edit', 'store'])
   .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('gameversions', GameVersionsController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))

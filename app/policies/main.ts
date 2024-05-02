@@ -13,5 +13,6 @@
 */
 
 export const policies = {
+  GameVersionPolicy: () => import('#policies/game_version_policy'),
   UserPolicy: () => import('#policies/user_policy')
 }
