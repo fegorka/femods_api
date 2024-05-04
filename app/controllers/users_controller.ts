@@ -34,7 +34,7 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('update', requestedUser))
       return response.forbidden('Insufficient permissions')
 
-    const payload = await request.validateUsing(updateUserValidator)
+    const payload = await request.validateUsing(updateUserValidator(requestedUser.id))
     await User.updateOrCreate({ id: requestedUser.id }, payload)
   }
 

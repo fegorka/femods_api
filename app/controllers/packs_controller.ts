@@ -53,7 +53,7 @@ export default class PacksController {
     if (await bouncer.with(PackPolicy).denies('update', requestedPack))
       return response.forbidden('Insufficient permissions')
 
-    const payload = await request.validateUsing(updatePackValidator)
+    const payload = await request.validateUsing(updatePackValidator(requestedPack.id))
     await Pack.updateOrCreate({ id: requestedPack.id }, payload)
   }
 
