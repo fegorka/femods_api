@@ -5,13 +5,19 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.string('id').primary()
+      table.string('id', 24).primary()
 
       table.string('name', 32).notNullable()
-      table.string('meta_name', 64).notNullable()
+      table.string('meta_name', 24).notNullable().unique()
 
       table.string('download_url', 2048).notNullable()
-      table.enum('safe_status', ['safe', 'unknown', 'unsafe']).notNullable().defaultTo('unknown')
+
+      table
+        .string('pack_item_safe_status_id')
+        .notNullable()
+        .references('id')
+        .inTable('pack_item_safe_statuses')
+        .onDelete('RESTRICT')
 
       table
         .string('pack_item_type_id')
