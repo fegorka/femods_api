@@ -1,6 +1,5 @@
 import factory from '@adonisjs/lucid/factories'
 import PackItem from '#models/pack_item'
-import { cuid } from '@adonisjs/core/helpers'
 import { randomInt } from 'node:crypto'
 import PackItemInstallPath from '#models/pack_item_install_path'
 import PackItemType from '#models/pack_item_type'
@@ -15,15 +14,12 @@ export const PackItemFactory = factory
     const packReleases = await PackRelease.all()
     return {
       name: name,
-      metaName: `${name}+${cuid()}`,
 
       downloadUrl:
         `${faker.internet.url({ appendSlash: false })}/${faker.lorem.words(20)}/file/${faker.helpers.arrayElement(['.jar', '.zip', '.txt'])}`.replace(
           /\s+/g,
           ''
         ),
-
-      safeStatus: faker.helpers.arrayElement(['safe', 'unknown', 'unsafe']),
 
       packItemInstallPathId: packItemInstallPaths[randomInt(packItemInstallPaths.length - 1)].id,
       packItemTypeId: packItemTypes[randomInt(packItemTypes.length - 1)].id,

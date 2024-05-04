@@ -6,6 +6,7 @@ import PackItemType from '#models/pack_item_type'
 import PackRelease from '#models/pack_release'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackItemInstallPath from '#models/pack_item_install_path'
+import PackItemSafeStatus from '#models/pack_item_safe_status'
 
 export default class PackItem extends BaseModel {
   @column({ isPrimary: true })
@@ -21,7 +22,7 @@ export default class PackItem extends BaseModel {
   declare downloadUrl: string
 
   @column()
-  declare safeStatus: string
+  declare packItemSafeStatusId: string
 
   @column()
   declare packItemTypeId: string
@@ -44,14 +45,28 @@ export default class PackItem extends BaseModel {
   @belongsTo(() => PackItemInstallPath)
   declare packItemInstallPath: BelongsTo<typeof PackItemInstallPath>
 
+  @belongsTo(() => PackRelease)
+  declare packRelease: BelongsTo<typeof PackRelease>
+
+  @belongsTo(() => PackItemSafeStatus)
+  declare packItemSafeStatus: BelongsTo<typeof PackItemSafeStatus>
+
   @manyToMany(() => PackPreDownloadQuestion)
   declare packPreDownloadQuestions: ManyToMany<typeof PackPreDownloadQuestion>
 
-  @belongsTo(() => PackRelease)
-  declare packRelease: BelongsTo<typeof PackRelease>
+  @beforeCreate()
+  static async assignPackItemSafeStatus(packItem: PackItem) {
+    const defaultStatus = await PackItemSafeStatus.findByOrFail({ name: 'unknown' })
+    packItem.packItemSafeStatusId = defaultStatus.id
+  }
 
   @beforeCreate()
   static async assignId(instance: PackItem) {
     instance.id = cuid()
+  }
+
+  @beforeCreate()
+  static async assignMetaName(instance: PackItem) {
+    instance.metaName = cuid()
   }
 }
