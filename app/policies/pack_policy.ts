@@ -18,17 +18,17 @@ export default class PackPolicy extends BasePolicy {
 
   @allowGuest()
   async show(user: User | null, requestedPack: Pack): Promise<AuthorizerResponse> {
-    const allowedStatuses: string[] = ['default']
-    const allowedVisibleLevels: string[] = ['public']
+    const allowedPackStatuses: string[] = ['default']
+    const allowedPackVisibleLevels: string[] = ['public']
     const requestedPackStatus = await PackStatus.findByOrFail({ id: requestedPack.packStatusId })
-    const requestedVisibleLevel = await PackVisibleLevel.findByOrFail({
+    const requestedPackVisibleLevel = await PackVisibleLevel.findByOrFail({
       id: requestedPack.packVisibleLevelId,
     })
     const userId = user && user.id !== undefined ? user.id : null
     return !(
       userId !== requestedPack.userId &&
-      (!allowedStatuses.includes(requestedPackStatus.name) ||
-        !allowedVisibleLevels.includes(requestedVisibleLevel.name)) &&
+      (!allowedPackStatuses.includes(requestedPackStatus.name) ||
+        !allowedPackVisibleLevels.includes(requestedPackVisibleLevel.name)) &&
       !(await RoleService.userHaveRoleCheck(['extended', 'super'], user))
     )
   }
