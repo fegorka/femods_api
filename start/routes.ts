@@ -9,6 +9,8 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
+const PackItemsController = () => import('#controllers/pack_items_controller')
+
 const PacksController = () => import('#controllers/packs_controller')
 const GameVersionsController = () => import('#controllers/game_versions_controller')
 const UsersController = () => import('#controllers/users_controller')
@@ -50,3 +52,8 @@ router
   .resource('packs', PacksController)
   .except(['create', 'edit'])
   .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('packitems', PackItemsController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
