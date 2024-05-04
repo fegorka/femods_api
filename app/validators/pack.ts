@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 import HelperService from '#services/helper_service'
 
-function storeOrUpdatePackValidation() {
+function storeOrUpdatePackValidation(packId: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine.string().trim().minLength(2).maxLength(32),
@@ -13,7 +13,12 @@ function storeOrUpdatePackValidation() {
         .maxLength(32)
         .regex(/^(?!_)(?!.*__)[a-z0-9_]+(?<!_)(?<!-)$/)
         .unique(async (db, value): Promise<boolean> => {
-          return !(await db.from('packs').where('public_name', value).first())
+          if (packId === null) return !(await db.from('packs').where('public_name', value).first())
+          return !(await db
+            .from('packs')
+            .where('public_name', value)
+            .andWhereNot('id', packId)
+            .first())
         }),
       packVisibleLevelId: vine
         .string()
@@ -40,5 +45,5 @@ function storeOrUpdatePackValidation() {
   )
 }
 
-export const updatePackValidator = storeOrUpdatePackValidation()
+export const updatePackValidator = (packId: string) => storeOrUpdatePackValidation(packId)
 export const storePackValidator = storeOrUpdatePackValidation()
