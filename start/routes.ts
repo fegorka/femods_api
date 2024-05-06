@@ -10,6 +10,13 @@
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
 
+const UserStatusesController = () => import('#controllers/user_statuses_controller')
+
+const PackReleasesController = () => import('#controllers/pack_releases_controller')
+
+const PackPreDownloadQuestionsController = () =>
+  import('#controllers/pack_pre_download_questions_controller')
+
 const TagsController = () => import('#controllers/tags_controller')
 
 const PackVisibleLevelsController = () => import('#controllers/pack_visible_levels_controller')
@@ -54,11 +61,6 @@ router
   .use(middleware.auth({ guards: ['api'] }))
 
 router
-  .resource('users', UsersController)
-  .except(['create', 'edit', 'store'])
-  .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
   .resource('gameversions', GameVersionsController)
   .except(['create', 'edit'])
   .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
@@ -89,7 +91,17 @@ router
   .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
 router
+  .resource('packpredownloadquestions', PackPreDownloadQuestionsController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
   .resource('packstatuses', PackStatusesController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('packreleases', PackReleasesController)
   .except(['create', 'edit'])
   .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
@@ -107,3 +119,13 @@ router
   .resource('tags', TagsController)
   .except(['create', 'edit'])
   .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('users', UsersController)
+  .except(['create', 'edit', 'store'])
+  .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('userstatuses', UserStatusesController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
