@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 import HelperService from '#services/helper_service'
 
-function storeOrUpdatePackItemValidation(packReleaseId: string) {
+function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine
@@ -12,25 +12,37 @@ function storeOrUpdatePackItemValidation(packReleaseId: string) {
         .maxLength(32)
         .regex(/^(?!_)(?!.*__)[a-zA-Z0-9_ ]+(?<!_)(?<!-)$/)
         .unique(async (db, value): Promise<boolean> => {
+          if (packItem === null)
+            return !(await db
+              .from('pack_items')
+              .where('name', value)
+              .andWhere('pack_release_id', packReleaseId)
+              .first())
           return !(await db
             .from('pack_items')
             .where('name', value)
             .andWhere('pack_release_id', packReleaseId)
+            .andWhereNot('id', packItem)
             .first())
-        }),
-      // metaName work with error on unique, will be changed on database change
-      metaName: vine
-        .string()
-        .fixedLength(HelperService.cuidLength)
-        .regex(HelperService.cuidRegex)
-        .unique(async (db, value): Promise<boolean> => {
-          return !(await db.from('pack_items').where('meta_name', value).first())
         }),
       downloadUrl: vine
         .string()
         .activeUrl()
-        .regex(/^(https:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/.*\.(jar|zip)$/),
-      safeStatus: vine.enum(['safe', 'unknown', 'unsafe']),
+        .regex(/^(https:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/.*\.(jar|zip)$/)
+        .unique(async (db, value): Promise<boolean> => {
+          if (packItem === null)
+            return !(await db
+              .from('pack_items')
+              .where('download_url', value)
+              .andWhere('pack_release_id', packReleaseId)
+              .first())
+          return !(await db
+            .from('pack_items')
+            .where('download_url', value)
+            .andWhere('pack_release_id', packReleaseId)
+            .andWhereNot('id', packItem)
+            .first())
+        }),
       packItemTypeId: vine
         .string()
         .fixedLength(HelperService.cuidLength)
@@ -67,7 +79,7 @@ export const preCheckPackItemReleaseIdValidator = vine.compile(
       }),
   })
 )
-export const updatePackItemValidator = (packReleaseId: string) =>
-  storeOrUpdatePackItemValidation(packReleaseId)
+export const updatePackItemValidator = (packReleaseId: string, packItemId: string) =>
+  storeOrUpdatePackItemValidation(packReleaseId, packItemId)
 export const storePackItemValidator = (packReleaseId: string) =>
   storeOrUpdatePackItemValidation(packReleaseId)
