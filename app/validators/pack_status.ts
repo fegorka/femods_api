@@ -1,6 +1,6 @@
 import vine from '@vinejs/vine'
 
-function storeOrUpdatePackStatusValidation(PackStatusId: string | null = null) {
+function storeOrUpdatePackStatusValidation(packStatusId: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine
@@ -10,18 +10,18 @@ function storeOrUpdatePackStatusValidation(PackStatusId: string | null = null) {
         .minLength(2)
         .maxLength(32)
         .unique(async (db, value): Promise<boolean> => {
-          if (PackStatusId === null)
+          if (packStatusId === null)
             return !(await db.from('pack_statuses').where('name', value).first())
           return !(await db
             .from('pack_statuses')
             .where('name', value)
-            .andWhereNot('id', PackStatusId)
+            .andWhereNot('id', packStatusId)
             .first())
         }),
     })
   )
 }
 
-export const updatePackStatusValidator = (PackStatusId: string) =>
-  storeOrUpdatePackStatusValidation(PackStatusId)
+export const updatePackStatusValidator = (packStatusId: string) =>
+  storeOrUpdatePackStatusValidation(packStatusId)
 export const storePackStatusValidator = storeOrUpdatePackStatusValidation()
