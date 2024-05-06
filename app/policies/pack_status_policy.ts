@@ -9,7 +9,7 @@ export default class PackStatusPolicy extends BasePolicy {
   }
 
   async store(user: User): Promise<AuthorizerResponse> {
-    return await RoleService.userHaveRoleCheck(['extended', 'super'], user)
+    return await RoleService.userHaveRoleCheck(['super'], user)
   }
 
   @allowGuest()

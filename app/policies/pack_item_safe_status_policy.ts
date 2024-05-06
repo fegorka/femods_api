@@ -6,7 +6,7 @@ import RoleService from '#services/role_service'
 
 export default class PackItemSafeStatusPolicy extends BasePolicy {
   async index(user: User): Promise<AuthorizerResponse> {
-    return await RoleService.userHaveRoleCheck(['extended', 'super'], user)
+    return await RoleService.userHaveRoleCheck(['super'], user)
   }
 
   async store(user: User): Promise<AuthorizerResponse> {
