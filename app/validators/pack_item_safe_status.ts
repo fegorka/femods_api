@@ -1,6 +1,6 @@
 import vine from '@vinejs/vine'
 
-function storeOrUpdatePackItemSafeStatusValidation(packSafeStatusId: string | null = null) {
+function storeOrUpdatePackItemSafeStatusValidation(packItemSafeStatusId: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine
@@ -10,18 +10,18 @@ function storeOrUpdatePackItemSafeStatusValidation(packSafeStatusId: string | nu
         .minLength(2)
         .maxLength(32)
         .unique(async (db, value): Promise<boolean> => {
-          if (packSafeStatusId === null)
+          if (packItemSafeStatusId === null)
             return !(await db.from('pack_item_safe_statuses').where('name', value).first())
           return !(await db
             .from('pack_item_safe_statuses')
             .where('name', value)
-            .andWhereNot('id', packSafeStatusId)
+            .andWhereNot('id', packItemSafeStatusId)
             .first())
         }),
     })
   )
 }
 
-export const updatePackItemSafeStatusValidator = (packSafeStatusId: string) =>
-  storeOrUpdatePackItemSafeStatusValidation(packSafeStatusId)
+export const updatePackItemSafeStatusValidator = (packItemSafeStatusId: string) =>
+  storeOrUpdatePackItemSafeStatusValidation(packItemSafeStatusId)
 export const storePackItemSafeStatusValidator = storeOrUpdatePackItemSafeStatusValidation()
