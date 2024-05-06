@@ -21,8 +21,7 @@ export default class PackItemPolicy extends BasePolicy {
   async show(user: User | null, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
     const allowedPackStatuses: string[] = ['default']
     const allowedPackVisibleLevels: string[] = ['public']
-    const packRelease = await PackRelease.findByOrFail({ id: requestedPackItem.packReleaseId })
-    const pack = await Pack.findByOrFail({ id: packRelease.packId })
+    const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     const packStatus = await PackStatus.findByOrFail({ id: pack.packStatusId })
     const packVisibleLevel = await PackVisibleLevel.findByOrFail({
       id: pack.packVisibleLevelId,
@@ -37,14 +36,17 @@ export default class PackItemPolicy extends BasePolicy {
   }
 
   async update(user: User, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
-    const packRelease = await PackRelease.findByOrFail({ id: requestedPackItem.packReleaseId })
-    const pack = await Pack.findByOrFail({ id: packRelease.packId })
+    const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId
   }
 
   async destroy(user: User, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
-    const packRelease = await PackRelease.findByOrFail({ id: requestedPackItem.packReleaseId })
-    const pack = await Pack.findByOrFail({ id: packRelease.packId })
+    const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId || RoleService.userHaveRoleCheck(['super'], user)
+  }
+
+  private async getPackByPackItemId(packItemId: string) {
+    const packRelease = await PackRelease.findByOrFail({ id: packItemId })
+    return await Pack.findByOrFail({ id: packRelease.packId })
   }
 }
