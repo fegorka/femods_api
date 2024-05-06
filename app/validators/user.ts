@@ -16,6 +16,7 @@ export const updateUserValidator = (userId: string) =>
             .where('public_name', value)
             .andWhereNot('id', userId)
             .first())
-        }),
+        })
+        .nullable(),
     })
   )
