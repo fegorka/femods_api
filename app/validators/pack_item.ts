@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 import HelperService from '#services/helper_service'
 
-function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string | null = null) {
+function storeOrUpdatePackItemValidation(packReleaseId: string, packItemId: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine
@@ -12,7 +12,7 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string
         .maxLength(32)
         .regex(/^(?!_)(?!.*__)[a-zA-Z0-9_ ]+(?<!_)(?<!-)$/)
         .unique(async (db, value): Promise<boolean> => {
-          if (packItem === null)
+          if (packItemId === null)
             return !(await db
               .from('pack_items')
               .where('name', value)
@@ -22,7 +22,7 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string
             .from('pack_items')
             .where('name', value)
             .andWhere('pack_release_id', packReleaseId)
-            .andWhereNot('id', packItem)
+            .andWhereNot('id', packItemId)
             .first())
         }),
       downloadUrl: vine
@@ -30,7 +30,7 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string
         .activeUrl()
         .regex(/^(https:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/.*\.(jar|zip)$/)
         .unique(async (db, value): Promise<boolean> => {
-          if (packItem === null)
+          if (packItemId === null)
             return !(await db
               .from('pack_items')
               .where('download_url', value)
@@ -40,9 +40,17 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItem: string
             .from('pack_items')
             .where('download_url', value)
             .andWhere('pack_release_id', packReleaseId)
-            .andWhereNot('id', packItem)
+            .andWhereNot('id', packItemId)
             .first())
         }),
+      specialPathModifier: vine
+        .string()
+        .minLength(2)
+        .maxLength(128)
+        .regex(
+          /^(?!\/|:)[a-zA-Z\ \/](?!.*\/(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]|COMSCSI|LPTSCSI|.*\.|.*\~|)\/)([^%:\*?"<>|\\])*(?<!\/)$/
+        )
+        .nullable(),
       packItemTypeId: vine
         .string()
         .fixedLength(HelperService.cuidLength)
