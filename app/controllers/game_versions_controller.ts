@@ -37,14 +37,15 @@ export default class GameVersionsController {
   async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedUser = await GameVersion.findBy({ id: params.id })
-    if (requestedUser === null || requestedUser === undefined) return response.notFound()
+    const requestedGameVersion = await GameVersion.findBy({ id: params.id })
+    if (requestedGameVersion === null || requestedGameVersion === undefined)
+      return response.notFound()
 
-    if (await bouncer.with(GameVersionPolicy).denies('update', requestedUser))
+    if (await bouncer.with(GameVersionPolicy).denies('update', requestedGameVersion))
       return response.forbidden('Insufficient permissions')
 
-    const payload = await request.validateUsing(updateGameVersionValidator)
-    await GameVersion.updateOrCreate({ id: requestedUser.id }, payload)
+    const payload = await request.validateUsing(updateGameVersionValidator(requestedGameVersion.id))
+    await GameVersion.updateOrCreate({ id: requestedGameVersion.id }, payload)
   }
 
   async destroy({ bouncer, response, request, params }: HttpContext) {
