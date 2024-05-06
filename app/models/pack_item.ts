@@ -5,7 +5,6 @@ import { cuid } from '@adonisjs/core/helpers'
 import PackItemType from '#models/pack_item_type'
 import PackRelease from '#models/pack_release'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
-import PackItemInstallPath from '#models/pack_item_install_path'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
 
 export default class PackItem extends BaseModel {
@@ -20,6 +19,9 @@ export default class PackItem extends BaseModel {
 
   @column()
   declare downloadUrl: string
+
+  @column()
+  declare specialInstallPath: string
 
   @column()
   declare packItemSafeStatusId: string

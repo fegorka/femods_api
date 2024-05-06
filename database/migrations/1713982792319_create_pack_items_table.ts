@@ -12,6 +12,8 @@ export default class extends BaseSchema {
 
       table.string('download_url', 2048).notNullable()
 
+      table.string('install_path_modifier', 128).nullable()
+
       table
         .string('pack_item_safe_status_id')
         .notNullable()

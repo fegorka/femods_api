@@ -75,6 +75,12 @@ export default class Pack extends BaseModel {
   declare tags: ManyToMany<typeof Tag>
 
   @beforeCreate()
+  static async assignStatus(pack: Pack) {
+    const defaultStatus = await PackStatus.findByOrFail({ name: 'default' })
+    pack.packStatusId = defaultStatus.id
+  }
+
+  @beforeCreate()
   static async assignId(instance: Pack) {
     instance.id = cuid()
   }
