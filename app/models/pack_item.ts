@@ -22,6 +22,9 @@ export default class PackItem extends BaseModel {
   declare downloadUrl: string
 
   @column()
+  declare specialInstallPath: string
+
+  @column()
   declare packItemSafeStatusId: string
 
   @column()
