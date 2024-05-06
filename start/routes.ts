@@ -9,6 +9,12 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
+
+const TagsController = () => import('#controllers/tags_controller')
+
+const PackVisibleLevelsController = () => import('#controllers/pack_visible_levels_controller')
+const RolesController = () => import('#controllers/roles_controller')
+
 const PackStatusesController = () => import('#controllers/pack_statuses_controller')
 
 const PackModCoresController = () => import('#controllers/pack_mod_cores_controller')
@@ -86,3 +92,18 @@ router
   .resource('packstatuses', PackStatusesController)
   .except(['create', 'edit'])
   .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('packvisiblelevels', PackVisibleLevelsController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('roles', RolesController)
+  .except(['create', 'edit'])
+  .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+router
+  .resource('tags', TagsController)
+  .except(['create', 'edit'])
+  .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
