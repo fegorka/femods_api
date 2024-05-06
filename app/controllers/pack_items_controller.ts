@@ -51,7 +51,7 @@ export default class PackItemsController {
 
     await request.validateUsing(preCheckPackItemReleaseIdValidator)
     const payload = await request.validateUsing(
-      updatePackItemValidator(request.body().packReleaseId)
+      updatePackItemValidator(request.body().packReleaseId, requestedPackItem.id)
     )
     await PackItem.updateOrCreate({ id: requestedPackItem.id }, payload)
   }
