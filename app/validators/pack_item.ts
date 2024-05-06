@@ -43,7 +43,7 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItemId: stri
             .andWhereNot('id', packItemId)
             .first())
         }),
-      specialPathModifier: vine
+      installPathModifier: vine
         .string()
         .minLength(2)
         .maxLength(128)
