@@ -8,7 +8,7 @@ function parseVersionToTrimVersionOrSkip(value: unknown) {
   return HelperService.trimVersion(value)
 }
 
-function storeOrUpdateGameVersionValidation() {
+function storeOrUpdateGameVersionValidation(gameVersionId: string | null = null) {
   return vine.compile(
     vine.object({
       name: vine
@@ -20,11 +20,18 @@ function storeOrUpdateGameVersionValidation() {
         .regex(semVerRegex)
         .parse(parseVersionToTrimVersionOrSkip)
         .unique(async (db, value): Promise<boolean> => {
-          return !(await db.from('game_versions').where('name', value).first())
+          if (gameVersionId === null)
+            return !(await db.from('game_versions').where('name', value).first())
+          return !(await db
+            .from('game_versions')
+            .where('name', value)
+            .andWhereNot('id', gameVersionId)
+            .first())
         }),
     })
   )
 }
 
-export const updateGameVersionValidator = storeOrUpdateGameVersionValidation()
+export const updateGameVersionValidator = (gameVersionId: string) =>
+  storeOrUpdateGameVersionValidation(gameVersionId)
 export const storeGameVersionValidator = storeOrUpdateGameVersionValidation()
