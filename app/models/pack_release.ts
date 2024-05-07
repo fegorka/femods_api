@@ -54,10 +54,10 @@ export default class PackRelease extends BaseModel {
     await HookService.changePackVersionsInfo(packRelease)
   }
 
-  //    @afterDelete()
-  //    static async changePackVersionsInfoOnDelete(packRelease: PackRelease) {
-  //      await HookService.changePackVersionsInfo(packRelease)
-  //    }
+  @afterDelete()
+  static async changePackVersionsInfoOnDelete(packRelease: PackRelease) {
+    await HookService.changePackVersionsInfo(packRelease)
+  }
 
   @beforeCreate()
   static async assignId(instance: PackRelease) {
