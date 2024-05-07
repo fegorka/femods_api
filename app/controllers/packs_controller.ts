@@ -4,21 +4,24 @@ import Pack from '#models/pack'
 import PackPolicy from '#policies/pack_policy'
 import { requestParamsCuidValidator } from '#validators/request'
 import { storePackValidator, updatePackValidator } from '#validators/pack'
+import User from '#models/user'
 
 export default class PacksController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const allowedStatuses: string[] = ['default']
-    const allowedVisibleLevels: string[] = ['default']
-
     if (await bouncer.with(PackPolicy).denies('index'))
       return Pack.query()
-        .whereHas('packStatus', (query) => {
-          query.whereIn('name', allowedStatuses)
+        .whereHas('packStatus', (packStatusQuery) => {
+          packStatusQuery.whereIn('name', Pack.allowedPackStatusToIndex)
         })
-        .andWhereHas('packVisibleLevel', (query) => {
-          query.whereIn('name', allowedVisibleLevels)
+        .andWhereHas('packVisibleLevel', (packVisibleLevelQuery) => {
+          packVisibleLevelQuery.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+        })
+        .andWhereHas('user', (userQuery) => {
+          userQuery.whereHas('userStatus', (userStatusQuery) => {
+            userStatusQuery.whereIn('name', User.allowedUserStatusToIndex)
+          })
         })
     return await Pack.all()
   }
