@@ -8,6 +8,8 @@ import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
 
 export default class PackItem extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

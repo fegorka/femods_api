@@ -17,6 +17,8 @@ import Tag from '#models/tag'
 import PackStatus from '#models/pack_status'
 
 export default class Pack extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

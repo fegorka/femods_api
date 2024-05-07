@@ -4,6 +4,7 @@ import {
   afterCreate,
   BaseModel,
   beforeCreate,
+  beforeSave,
   belongsTo,
   column,
   hasMany,
@@ -14,6 +15,7 @@ import { cuid } from '@adonisjs/core/helpers'
 import Pack from '#models/pack'
 import Role from '#models/role'
 import UserStatus from '#models/user_status'
+import hash from '@adonisjs/core/services/hash'
 
 //import { compose } from '@adonisjs/core/helpers'
 //import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -25,6 +27,8 @@ import UserStatus from '#models/user_status'
 //export default class User extends compose(BaseModel, AuthFinder) {
 
 export default class User extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 
@@ -40,13 +44,13 @@ export default class User extends BaseModel {
   @column()
   declare publicName: string | null
 
-  @column()
+  @column({ serializeAs: null })
   declare providerId: string
 
   @column()
   declare provider: string
 
-  @column()
+  @column({ serializeAs: null })
   declare email: string
 
   @column()
@@ -66,6 +70,13 @@ export default class User extends BaseModel {
 
   @manyToMany(() => Role)
   declare roles: ManyToMany<typeof Role>
+
+  @beforeSave()
+  static async hashEmail(user: User) {
+    if (user.email) {
+      user.email = await hash.make(user.email)
+    }
+  }
 
   @afterCreate()
   static async assignRole(user: User) {

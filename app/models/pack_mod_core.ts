@@ -4,6 +4,8 @@ import { cuid } from '@adonisjs/core/helpers'
 import Pack from '#models/pack'
 
 export default class PackModCore extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 
