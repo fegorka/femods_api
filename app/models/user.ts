@@ -44,13 +44,13 @@ export default class User extends BaseModel {
   @column()
   declare publicName: string | null
 
-  @column()
+  @column({ serializeAs: null })
   declare providerId: string
 
   @column()
   declare provider: string
 
-  @column()
+  @column({ serializeAs: null })
   declare email: string
 
   @column()
