@@ -4,6 +4,8 @@ import { cuid } from '@adonisjs/core/helpers'
 import PackRelease from '#models/pack_release'
 
 export default class GameVersion extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

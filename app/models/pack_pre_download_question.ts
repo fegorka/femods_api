@@ -5,6 +5,8 @@ import PackRelease from '#models/pack_release'
 import PackItem from '#models/pack_item'
 
 export default class PackPreDownloadQuestion extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

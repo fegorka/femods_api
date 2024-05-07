@@ -4,6 +4,8 @@ import { BaseModel, beforeCreate, column, manyToMany } from '@adonisjs/lucid/orm
 import User from '#models/user'
 
 export default class Role extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

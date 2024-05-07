@@ -17,6 +17,8 @@ import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import HookService from '#services/hook_service'
 
 export default class PackRelease extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 
