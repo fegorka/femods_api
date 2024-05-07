@@ -72,11 +72,6 @@ router
       .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
     router
-      .resource('packitems', PackItemsController)
-      .except(['create', 'edit'])
-      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-    router
       .resource('packitemsafestatuses', PackItemSafeStatusesController)
       .except(['create', 'edit'])
       .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
@@ -92,17 +87,7 @@ router
       .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
     router
-      .resource('packpredownloadquestions', PackPreDownloadQuestionsController)
-      .except(['create', 'edit'])
-      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-    router
       .resource('packstatuses', PackStatusesController)
-      .except(['create', 'edit'])
-      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-    router
-      .resource('packreleases', PackReleasesController)
       .except(['create', 'edit'])
       .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
@@ -143,5 +128,44 @@ router
     router.get('search/:searchString/packs', '#controllers/packs_controller.indexBySearch')
     router.get('tags/:tagId/packs', '#controllers/packs_controller.indexByTag')
     router.get('users/:userId/packs', '#controllers/packs_controller.indexByUser')
+  })
+  .prefix('api')
+
+router
+  .group(() => {
+    router
+      .resource('packreleases', PackReleasesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router.get('packs/:packId/packreleases', '#controllers/pack_releases_controller.indexByPack')
+  })
+  .prefix('api')
+
+router
+  .group(() => {
+    router
+      .resource('packitems', PackItemsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router.get(
+      'packreleases/:packReleaseId/packitems',
+      '#controllers/pack_items_controller.indexByPackRelease'
+    )
+  })
+  .prefix('api')
+
+router
+  .group(() => {
+    router
+      .resource('packpredownloadquestions', PackPreDownloadQuestionsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router.get(
+      'packreleases/:packReleaseId/packpredownloadquestions',
+      '#controllers/pack_pre_download_questions_controller.indexByPackRelease'
+    )
   })
   .prefix('api')
