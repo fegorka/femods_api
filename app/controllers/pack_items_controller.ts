@@ -8,12 +8,40 @@ import {
   storePackItemValidator,
   updatePackItemValidator,
 } from '#validators/pack_item'
+import Pack from '#models/pack'
+import User from '#models/user'
+import { indexByPackReleasePackItemValidator } from '#validators/pack_item'
+import PackRelease from '#models/pack_release'
 
 export default class PackItemsController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ auth, bouncer, request }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return response.forbidden('Insufficient permissions')
+      return this.packItemIndexWithoutHiddenPacksQuery
     return await PackItem.all()
+  }
+
+  async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
+    await request.validateUsing(indexByPackReleasePackItemValidator)
+
+    const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
+    const packReleasePackId =
+      packRelease && packRelease.packId !== undefined ? packRelease.packId : null
+    const pack = await Pack.findBy({ id: packReleasePackId })
+    const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
+    const packUserId = pack && pack.userId !== undefined ? pack.userId : null
+
+    if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
+
+    if (await bouncer.with(PackItemPolicy).denies('index'))
+      return this.packItemIndexWithoutHiddenPacksQuery.andWhere(
+        'packReleaseId',
+        params.packReleaseId
+      )
+    return await PackItem.findManyBy({ packReleaseId: params.packReleaseId })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -66,4 +94,24 @@ export default class PackItemsController {
       return response.forbidden('Insufficient permissions')
     return await requestedPackItem.delete()
   }
+
+  private packItemIndexWithoutHiddenPacksQuery = PackItem.query().whereHas(
+    'packRelease',
+    (packReleaseQuery) => {
+      packReleaseQuery.whereHas('pack', (packQuery) => {
+        packQuery
+          .whereHas('packStatus', (packStatusQuery) => {
+            packStatusQuery.whereIn('name', Pack.allowedPackStatusToIndex)
+          })
+          .andWhereHas('packVisibleLevel', (packVisibleLevelQuery) => {
+            packVisibleLevelQuery.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+          })
+          .andWhereHas('user', (userQuery) => {
+            userQuery.whereHas('userStatus', (userStatusQuery) => {
+              userStatusQuery.whereIn('name', User.allowedUserStatusToIndex)
+            })
+          })
+      })
+    }
+  )
 }
