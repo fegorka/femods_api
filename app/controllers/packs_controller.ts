@@ -54,7 +54,7 @@ export default class PacksController {
     await request.validateUsing(indexByUserPackValidator)
 
     const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
-    if (userId === params.userId) return Pack.findManyBy('userId', params.userId)
+    if (userId === params.userId) return Pack.findManyBy({ userId: params.userId })
 
     if (await bouncer.with(PackPolicy).denies('index'))
       return this.packIndexWithoutHiddenPacksQuery.andWhere('userId', params.userId)
