@@ -1,6 +1,7 @@
 import User from '#models/user'
 import { AccessToken } from '@adonisjs/auth/access_tokens'
 import { SocialProviderNames, SocialProviderDrivers } from '@adonisjs/ally/types'
+import hash from '@adonisjs/core/services/hash'
 
 export default class AuthProviderCallBackService {
   static async updateOrCreateUserAndGiveToken(
@@ -22,8 +23,13 @@ export default class AuthProviderCallBackService {
       email: providerUserData.email as string,
     }
 
-    return await User.accessTokens.create(
-      await User.updateOrCreate(findUserByProvider, userDetails)
-    )
+    const user = await User.updateOrCreate(findUserByProvider, userDetails)
+
+    if (await hash.needsReHash(user.email)) {
+      user.email = await hash.make(providerUserData.email)
+      await user.save()
+    }
+
+    return await User.accessTokens.create(user)
   }
 }
