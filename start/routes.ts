@@ -46,86 +46,102 @@ router.get('/', async () => {
 })
 
 router
-  .get('auth/:provider/redirect', '#controllers/auth_controller.loginProviderRedirect')
-  .where('provider', providers)
-router
-  .get('auth/:provider/callback', '#controllers/auth_controller.loginProviderHandleCallback')
-  .where('provider', providers)
+  .group(() => {
+    router
+      .post('auth/logout/self', '#controllers/auth_controller.logoutSelf')
+      .use(middleware.auth({ guards: ['api'] }))
+
+    router
+      .post('auth/logout/everywhere', '#controllers/auth_controller.logoutEverywhere')
+      .use(middleware.auth({ guards: ['api'] }))
+
+    router
+      .get('auth/:provider/redirect', '#controllers/auth_controller.loginProviderRedirect')
+      .where('provider', providers)
+    router
+      .get('auth/:provider/callback', '#controllers/auth_controller.loginProviderHandleCallback')
+      .where('provider', providers)
+  })
+  .prefix('api')
 
 router
-  .post('auth/logout/self', '#controllers/auth_controller.logoutSelf')
-  .use(middleware.auth({ guards: ['api'] }))
+  .group(() => {
+    router
+      .resource('gameversions', GameVersionsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packitems', PackItemsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packitemsafestatuses', PackItemSafeStatusesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packitemtypes', PackItemTypesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packmodcores', PackModCoresController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packpredownloadquestions', PackPreDownloadQuestionsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packstatuses', PackStatusesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packreleases', PackReleasesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('packvisiblelevels', PackVisibleLevelsController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('roles', RolesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('tags', TagsController)
+      .except(['create', 'edit'])
+      .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('users', UsersController)
+      .except(['create', 'edit', 'store'])
+      .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+
+    router
+      .resource('userstatuses', UserStatusesController)
+      .except(['create', 'edit'])
+      .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+  })
+  .prefix('api')
 
 router
-  .post('auth/logout/everywhere', '#controllers/auth_controller.logoutEverywhere')
-  .use(middleware.auth({ guards: ['api'] }))
+  .group(() => {
+    router
+      .resource('packs', PacksController)
+      .except(['create', 'edit'])
+      .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
-router
-  .resource('gameversions', GameVersionsController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packs', PacksController)
-  .except(['create', 'edit'])
-  .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packitems', PackItemsController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packitemsafestatuses', PackItemSafeStatusesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packitemtypes', PackItemTypesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packmodcores', PackModCoresController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packpredownloadquestions', PackPreDownloadQuestionsController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packstatuses', PackStatusesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packreleases', PackReleasesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('packvisiblelevels', PackVisibleLevelsController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('roles', RolesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('tags', TagsController)
-  .except(['create', 'edit'])
-  .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('users', UsersController)
-  .except(['create', 'edit', 'store'])
-  .use(['index', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
-
-router
-  .resource('userstatuses', UserStatusesController)
-  .except(['create', 'edit'])
-  .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
+    router.get('search/:searchString/packs', '#controllers/packs_controller.indexBySearch')
+    router.get('tags/:tagId/packs', '#controllers/packs_controller.indexByTag')
+    router.get('users/:userId/packs', '#controllers/packs_controller.indexByUser')
+  })
+  .prefix('api')
