@@ -4,16 +4,44 @@ import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import { requestParamsCuidValidator } from '#validators/request'
 import ControllerService from '#services/controller_service'
 import {
+  indexByPackReleasePackPreDownloadQuestionValidator,
   preCheckPackPreDownloadQuestionReleaseIdValidator,
   storePackPreDownloadQuestionValidator,
   updatePackPreDownloadQuestionValidator,
 } from '#validators/pack_pre_download_question'
+import Pack from '#models/pack'
+import User from '#models/user'
+import PackRelease from '#models/pack_release'
 
 export default class PackPreDownloadQuestionsController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ auth, bouncer, request }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return response.forbidden('Insufficient permissions')
+      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery
     return await PackPreDownloadQuestion.all()
+  }
+
+  async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
+    await request.validateUsing(indexByPackReleasePackPreDownloadQuestionValidator)
+
+    const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
+    const packReleasePackId =
+      packRelease && packRelease.packId !== undefined ? packRelease.packId : null
+    const pack = await Pack.findBy({ id: packReleasePackId })
+    const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
+    const packUserId = pack && pack.userId !== undefined ? pack.userId : null
+
+    if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
+
+    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
+      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.andWhere(
+        'packReleaseId',
+        params.packReleaseId
+      )
+    return await PackRelease.findManyBy({ packReleaseId: params.packReleaseId })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -87,4 +115,22 @@ export default class PackPreDownloadQuestionsController {
       return response.forbidden('Insufficient permissions')
     return await requestedPackPreDownloadQuestion.delete()
   }
+
+  private packPreDownloadQuestionIndexWithoutHiddenPacksQuery =
+    PackPreDownloadQuestion.query().whereHas('packRelease', (packReleaseQuery) => {
+      packReleaseQuery.whereHas('pack', (packQuery) => {
+        packQuery
+          .whereHas('packStatus', (packStatusQuery) => {
+            packStatusQuery.whereIn('name', Pack.allowedPackStatusToIndex)
+          })
+          .andWhereHas('packVisibleLevel', (packVisibleLevelQuery) => {
+            packVisibleLevelQuery.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+          })
+          .andWhereHas('user', (userQuery) => {
+            userQuery.whereHas('userStatus', (userStatusQuery) => {
+              userStatusQuery.whereIn('name', User.allowedUserStatusToIndex)
+            })
+          })
+      })
+    })
 }
