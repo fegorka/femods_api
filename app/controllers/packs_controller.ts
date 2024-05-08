@@ -2,9 +2,12 @@ import type { HttpContext } from '@adonisjs/core/http'
 import ControllerService from '#services/controller_service'
 import Pack from '#models/pack'
 import PackPolicy from '#policies/pack_policy'
-import { requestParamsCuidValidator } from '#validators/request'
 import {
-  indexBySearchPackValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+  requestSearchValidator,
+} from '#validators/request'
+import {
   indexByTagPackValidator,
   indexByUserPackValidator,
   storePackValidator,
@@ -16,35 +19,47 @@ export default class PacksController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    if (await bouncer.with(PackPolicy).denies('index')) return this.packIndexWithoutHiddenPacksQuery
-    return await Pack.all()
-  }
+    await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestSearchValidator)
 
-  async indexBySearch({ auth, bouncer, request, params }: HttpContext) {
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
-
-    await request.validateUsing(indexBySearchPackValidator)
+    if (request.input('search')) {
+      if (await bouncer.with(PackPolicy).denies('index'))
+        return this.packIndexWithoutHiddenPacksQuery
+          .andWhereILike('name', `%${request.input('search')}%`)
+          .orWhereILike('publicName', `%${request.input('search')}%`)
+          .orWhereHas('user', (userQuery) => {
+            userQuery.whereILike('name', `%${request.input('search')}%`)
+          })
+          .paginate(request.input('page'), request.input('limit'))
+      return await Pack.query()
+        .andWhereILike('name', `%${request.input('search')}%`)
+        .orWhereILike('publicName', `%${request.input('search')}%`)
+        .orWhereHas('user', (userQuery) => {
+          userQuery.whereILike('name', `%${request.input('search')}%`)
+        })
+        .paginate(request.input('page'), request.input('limit'))
+    }
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return this.packIndexWithoutHiddenPacksQuery
-        .andWhereILike('name', params.searchString)
-        .orWhereILike('publicName', params.searchString)
-    return Pack.query()
-      .whereILike('name', params.searchString)
-      .orWhereILike('publicName', params.searchString)
+      return this.packIndexWithoutHiddenPacksQuery.paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    return await Pack.query().paginate(request.input('page'), request.input('limit'))
   }
 
   async indexByTag({ auth, bouncer, request, params }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(indexByTagPackValidator)
+    await request.validateUsing(requestPageValidator)
 
     if (await bouncer.with(PackPolicy).denies('index'))
       return this.packIndexWithoutHiddenPacksQuery.andWhereHas('tags', (tagsQuery) => {
-        tagsQuery.where('tag_id', params.tagId)
+        tagsQuery.where('tag_id', params.tagId).paginate(request.body().page, 30)
       })
     return Pack.query().whereHas('tags', (tagsQuery) => {
-      tagsQuery.where('tag_id', params.tagId)
+      tagsQuery.where('tag_id', params.tagId).paginate(request.body().page, 30)
     })
   }
 
@@ -52,13 +67,16 @@ export default class PacksController {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(indexByUserPackValidator)
+    await request.validateUsing(requestPageValidator)
 
     const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
     if (userId === params.userId) return Pack.findManyBy({ userId: params.userId })
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return this.packIndexWithoutHiddenPacksQuery.andWhere('userId', params.userId)
-    return await Pack.findManyBy({ userId: params.userId })
+      return this.packIndexWithoutHiddenPacksQuery
+        .andWhere('userId', params.userId)
+        .paginate(request.body().page, 30)
+    return await Pack.query().where('userId', params.userId).paginate(request.body().page, 30)
   }
 
   async store({ bouncer, response, request }: HttpContext) {

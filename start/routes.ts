@@ -125,7 +125,6 @@ router
       .except(['create', 'edit'])
       .use(['store', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
 
-    router.get('search/:searchString/packs', '#controllers/packs_controller.indexBySearch')
     router.get('tags/:tagId/packs', '#controllers/packs_controller.indexByTag')
     router.get('users/:userId/packs', '#controllers/packs_controller.indexByUser')
   })

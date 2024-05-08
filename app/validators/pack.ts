@@ -45,14 +45,6 @@ function storeOrUpdatePackValidation(packId: string | null = null) {
   )
 }
 
-export const indexBySearchPackValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      searchString: vine.string().trim().toLowerCase().minLength(2).maxLength(64),
-    }),
-  })
-)
-
 export const indexByTagPackValidator = vine.compile(
   vine.object({
     params: vine.object({
