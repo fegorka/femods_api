@@ -17,6 +17,12 @@ import Tag from '#models/tag'
 import PackStatus from '#models/pack_status'
 
 export default class Pack extends BaseModel {
+  static allowedPackStatusToIndex = ['default']
+  static allowedPackStatusToShow = ['default']
+
+  static allowedPackVisibleLevelToIndex = ['public']
+  static allowedPackVisibleLevelToShow = ['link']
+
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })

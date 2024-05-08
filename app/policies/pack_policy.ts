@@ -5,6 +5,7 @@ import RoleService from '#services/role_service'
 import PackStatus from '#models/pack_status'
 import Pack from '#models/pack'
 import PackVisibleLevel from '#models/pack_visible_level'
+import UserStatus from '#models/user_status'
 
 export default class PackPolicy extends BasePolicy {
   @allowGuest()
@@ -18,17 +19,18 @@ export default class PackPolicy extends BasePolicy {
 
   @allowGuest()
   async show(user: User | null, requestedPack: Pack): Promise<AuthorizerResponse> {
-    const allowedPackStatuses: string[] = ['default']
-    const allowedPackVisibleLevels: string[] = ['public']
     const requestedPackStatus = await PackStatus.findByOrFail({ id: requestedPack.packStatusId })
     const requestedPackVisibleLevel = await PackVisibleLevel.findByOrFail({
       id: requestedPack.packVisibleLevelId,
     })
+    const packUser = await User.findByOrFail({ id: requestedPack.userId })
+    const packUserStatus = await UserStatus.findByOrFail({ id: packUser.userStatusId })
     const userId = user && user.id !== undefined ? user.id : null
     return !(
       userId !== requestedPack.userId &&
-      (!allowedPackStatuses.includes(requestedPackStatus.name) ||
-        !allowedPackVisibleLevels.includes(requestedPackVisibleLevel.name)) &&
+      (!User.allowedUserStatusToShow.includes(packUserStatus.name) ||
+        !Pack.allowedPackStatusToShow.includes(requestedPackStatus.name) ||
+        !Pack.allowedPackVisibleLevelToShow.includes(requestedPackVisibleLevel.name)) &&
       !(await RoleService.userHaveRoleCheck(['extended', 'super'], user))
     )
   }

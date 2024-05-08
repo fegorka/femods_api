@@ -1,19 +1,44 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import PackRelease from '#models/pack_release'
 import PackReleasePolicy from '#policies/pack_release_policy'
-import { requestParamsCuidValidator } from '#validators/request'
+import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
 import {
+  indexByPackPackReleaseValidator,
   preCheckPackReleasePackIdValidator,
   storePackReleaseIdeValidator,
   updatePackReleaseIdValidator,
 } from '#validators/pack_release'
 import ControllerService from '#services/controller_service'
+import User from '#models/user'
+import Pack from '#models/pack'
 
 export default class PackReleasesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ auth, bouncer, request }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
+    await request.validateUsing(requestPageValidator)
+
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return response.forbidden('Insufficient permissions')
-    return await PackRelease.all()
+      return this.packReleaseIndexWithoutHiddenPacksQuery.paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    return await PackRelease.query().paginate(request.input('page'), request.input('limit'))
+  }
+
+  async indexByPack({ auth, bouncer, request, params }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
+    await request.validateUsing(indexByPackPackReleaseValidator)
+
+    const pack = await Pack.findBy({ id: params.packId })
+    const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
+    const packUserId = pack && pack.userId !== undefined ? pack.userId : null
+    if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packId })
+
+    if (await bouncer.with(PackReleasePolicy).denies('index'))
+      return this.packReleaseIndexWithoutHiddenPacksQuery.andWhere('packId', params.packId)
+    return await PackRelease.findManyBy({ packId: params.packId })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -67,4 +92,22 @@ export default class PackReleasesController {
       return response.forbidden('Insufficient permissions')
     return await requestedPackRelease.delete()
   }
+
+  private packReleaseIndexWithoutHiddenPacksQuery = PackRelease.query().whereHas(
+    'pack',
+    (packQuery) => {
+      packQuery
+        .whereHas('packStatus', (packStatusQuery) => {
+          packStatusQuery.whereIn('name', Pack.allowedPackStatusToIndex)
+        })
+        .andWhereHas('packVisibleLevel', (packVisibleLevelQuery) => {
+          packVisibleLevelQuery.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+        })
+        .andWhereHas('user', (userQuery) => {
+          userQuery.whereHas('userStatus', (userStatusQuery) => {
+            userStatusQuery.whereIn('name', User.allowedUserStatusToIndex)
+          })
+        })
+    }
+  )
 }

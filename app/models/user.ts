@@ -27,6 +27,9 @@ import hash from '@adonisjs/core/services/hash'
 //export default class User extends compose(BaseModel, AuthFinder) {
 
 export default class User extends BaseModel {
+  static allowedUserStatusToIndex = ['default']
+  static allowedUserStatusToShow = ['default']
+
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })

@@ -76,6 +76,20 @@ function storeOrUpdatePackItemValidation(packReleaseId: string, packItemId: stri
   )
 }
 
+export const indexByPackReleasePackItemValidator = vine.compile(
+  vine.object({
+    params: vine.object({
+      packReleaseId: vine
+        .string()
+        .fixedLength(HelperService.cuidLength)
+        .regex(HelperService.cuidRegex)
+        .exists(async (db, value): Promise<boolean> => {
+          return await db.from('pack_releases').where('id', value).first()
+        }),
+    }),
+  })
+)
+
 export const preCheckPackItemReleaseIdValidator = vine.compile(
   vine.object({
     packReleaseId: vine

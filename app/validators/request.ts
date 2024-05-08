@@ -8,3 +8,16 @@ export const requestParamsCuidValidator = vine.compile(
     }),
   })
 )
+
+export const requestPageValidator = vine.compile(
+  vine.object({
+    page: vine.number().positive().min(1),
+    limit: vine.number().positive().min(1),
+  })
+)
+
+export const requestSearchValidator = vine.compile(
+  vine.object({
+    search: vine.string().trim().toLowerCase().minLength(2).maxLength(64).optional(),
+  })
+)

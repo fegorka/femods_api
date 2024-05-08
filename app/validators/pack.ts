@@ -45,5 +45,33 @@ function storeOrUpdatePackValidation(packId: string | null = null) {
   )
 }
 
+export const indexByTagPackValidator = vine.compile(
+  vine.object({
+    params: vine.object({
+      tagId: vine
+        .string()
+        .fixedLength(HelperService.cuidLength)
+        .regex(HelperService.cuidRegex)
+        .exists(async (db, value): Promise<boolean> => {
+          return await db.from('tags').where('id', value).first()
+        }),
+    }),
+  })
+)
+
+export const indexByUserPackValidator = vine.compile(
+  vine.object({
+    params: vine.object({
+      userId: vine
+        .string()
+        .fixedLength(HelperService.cuidLength)
+        .regex(HelperService.cuidRegex)
+        .exists(async (db, value): Promise<boolean> => {
+          return await db.from('users').where('id', value).first()
+        }),
+    }),
+  })
+)
+
 export const updatePackValidator = (packId: string) => storeOrUpdatePackValidation(packId)
 export const storePackValidator = storeOrUpdatePackValidation()
