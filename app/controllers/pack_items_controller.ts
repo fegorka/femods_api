@@ -1,7 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import PackItemPolicy from '#policies/pack_item_policy'
 import PackItem from '#models/pack_item'
-import { requestParamsCuidValidator } from '#validators/request'
+import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
 import ControllerService from '#services/controller_service'
 import {
   preCheckPackItemReleaseIdValidator,
@@ -17,9 +17,14 @@ export default class PackItemsController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
+    await request.validateUsing(requestPageValidator)
+
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return this.packItemIndexWithoutHiddenPacksQuery
-    return await PackItem.all()
+      return this.packItemIndexWithoutHiddenPacksQuery.paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    return await PackItem.query().paginate(request.input('page'), request.input('limit'))
   }
 
   async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {

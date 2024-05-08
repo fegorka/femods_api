@@ -1,7 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
-import { requestParamsCuidValidator } from '#validators/request'
+import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
 import ControllerService from '#services/controller_service'
 import {
   indexByPackReleasePackPreDownloadQuestionValidator,
@@ -17,9 +17,17 @@ export default class PackPreDownloadQuestionsController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
+    await request.validateUsing(requestPageValidator)
+
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery
-    return await PackPreDownloadQuestion.all()
+      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    return await PackPreDownloadQuestion.query().paginate(
+      request.input('page'),
+      request.input('limit')
+    )
   }
 
   async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
