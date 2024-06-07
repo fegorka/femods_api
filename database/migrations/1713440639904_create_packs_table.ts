@@ -8,7 +8,6 @@ export default class extends BaseSchema {
       table.string('id', 24).primary()
       table.string('public_id', 32).notNullable().unique()
 
-      table.string('name', 32).notNullable()
       table.string('public_name', 32).notNullable().unique()
 
       table.string('min_version', 11).nullable()

@@ -32,9 +32,6 @@ export default class Pack extends BaseModel {
   declare publicId: string
 
   @column()
-  declare name: string
-
-  @column()
   declare publicName: string | null
 
   @column()

@@ -17,7 +17,6 @@ export const PackFactory = factory
     const packVisibleLevels = await PackVisibleLevel.all()
     const packModCores = await PackModCore.all()
     return {
-      name: truncateString(faker.lorem.words({ min: 1, max: 3 }), 32),
       publicName: cuid(), // .word() no unique, uses .cuid()
 
       packVisibleLevelId: packVisibleLevels[randomInt(packVisibleLevels.length - 1)].id,

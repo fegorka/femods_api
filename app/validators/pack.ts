@@ -4,7 +4,6 @@ import HelperService from '#services/helper_service'
 function storeOrUpdatePackValidation(packId: string | null = null) {
   return vine.compile(
     vine.object({
-      name: vine.string().trim().minLength(2).maxLength(32),
       publicName: vine
         .string()
         .trim()
