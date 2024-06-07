@@ -29,13 +29,6 @@ export default class extends BaseSchema {
         .onDelete('RESTRICT')
 
       table
-        .string('pack_item_install_path_id')
-        .notNullable()
-        .references('id')
-        .inTable('pack_item_install_paths')
-        .onDelete('RESTRICT')
-
-      table
         .string('pack_release_id')
         .notNullable()
         .references('id')
