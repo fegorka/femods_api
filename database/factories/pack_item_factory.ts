@@ -20,8 +20,7 @@ export const PackItemFactory = factory
           /\s+/g,
           ''
         ),
-
-      packItemInstallPathId: packItemInstallPaths[randomInt(packItemInstallPaths.length - 1)].id,
+      
       packItemTypeId: packItemTypes[randomInt(packItemTypes.length - 1)].id,
       packReleaseId: packReleases[randomInt(packReleases.length - 1)].id,
     }

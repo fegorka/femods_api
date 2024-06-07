@@ -23,16 +23,13 @@ export default class PackItem extends BaseModel {
   declare downloadUrl: string
 
   @column()
-  declare specialInstallPath: string
+  declare installPathModifier: string | null
 
   @column()
   declare packItemSafeStatusId: string
 
   @column()
   declare packItemTypeId: string
-
-  @column()
-  declare packItemInstallPathId: string
 
   @column()
   declare packReleaseId: string
@@ -45,9 +42,6 @@ export default class PackItem extends BaseModel {
 
   @belongsTo(() => PackItemType)
   declare packItemType: BelongsTo<typeof PackItemType>
-
-  @belongsTo(() => PackItemInstallPath)
-  declare packItemInstallPath: BelongsTo<typeof PackItemInstallPath>
 
   @belongsTo(() => PackRelease)
   declare packRelease: BelongsTo<typeof PackRelease>
