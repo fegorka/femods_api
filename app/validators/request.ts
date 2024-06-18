@@ -1,3 +1,5 @@
+import type { BaseModel } from '@adonisjs/lucid/orm'
+
 import vine from '@vinejs/vine'
 import HelperService from '#services/helper_service'
 
@@ -21,3 +23,22 @@ export const requestSearchValidator = vine.compile(
     search: vine.string().trim().toLowerCase().minLength(2).maxLength(64).optional(),
   })
 )
+
+function requestIncludeValidatorLogic(model: typeof BaseModel) {
+  const allowedRelations: string[] = [...model.$relationsDefinitions.values()].map(
+    (relation) => relation.relationName
+  )
+  const shema = vine.group([
+    vine.group.if((data) => vine.helpers.isArray(data.include), {
+      include: vine
+        .array(vine.string().trim().minLength(2).maxLength(64).in(allowedRelations).optional())
+        .compact(),
+    }),
+    vine.group.else({
+      include: vine.string().trim().minLength(2).maxLength(64).in(allowedRelations).optional(),
+    }),
+  ])
+  return vine.compile(vine.object({}).merge(shema))
+}
+
+export const requestIncludeValidator = (model: BaseModel) => requestIncludeValidatorLogic(model)
