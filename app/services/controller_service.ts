@@ -27,11 +27,7 @@ export default class ControllerService {
     const relationsToInclude: string[] = Array.isArray(includes) ? includes : [includes]
     let query = queryToModify
 
-    for (const relation of relationsToInclude) {
-      console.log('relation = ' + relation)
-      query = query.preload(relation)
-    }
-
+    for (const relation of relationsToInclude) query = query.preload(relation)
     return query
   }
 }
