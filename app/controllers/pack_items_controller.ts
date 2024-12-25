@@ -1,36 +1,49 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import PackItemPolicy from '#policies/pack_item_policy'
+
 import PackItem from '#models/pack_item'
-import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
+import PackItemPolicy from '#policies/pack_item_policy'
+import Pack from '#models/pack'
+import PackRelease from '#models/pack_release'
+import User from '#models/user'
 import ControllerService from '#services/controller_service'
+
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+} from '#validators/request'
 import {
   preCheckPackItemReleaseIdValidator,
   storePackItemValidator,
   updatePackItemValidator,
 } from '#validators/pack_item'
-import Pack from '#models/pack'
-import User from '#models/user'
 import { indexByPackReleasePackItemValidator } from '#validators/pack_item'
-import PackRelease from '#models/pack_release'
 
 export default class PackItemsController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(PackItem))
 
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return this.packItemIndexWithoutHiddenPacksQuery.paginate(
-        request.input('page'),
-        request.input('limit')
-      )
-    return await PackItem.query().paginate(request.input('page'), request.input('limit'))
+      return await ControllerService.includeRelations(
+        this.packItemIndexWithoutHiddenPacksQuery,
+        request.input('includes')
+      ).paginate(request.input('page'), request.input('limit'))
+    return await ControllerService.includeRelations(
+      PackItem.query(),
+      request.input('includes')
+    ).paginate(request.input('page'), request.input('limit'))
   }
 
   async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(indexByPackReleasePackItemValidator)
+    await request.validateUsing(requestIncludeValidator(PackItem))
 
     const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
     const packReleasePackId =
@@ -41,15 +54,22 @@ export default class PackItemsController {
 
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return this.packItemIndexWithoutHiddenPacksQuery.andWhere(
-        'packReleaseId',
-        params.packReleaseId
-      )
-    return await PackItem.findManyBy({ packReleaseId: params.packReleaseId })
+      return ControllerService.includeRelations(
+        this.packItemIndexWithoutHiddenPacksQuery,
+        request.input('includes')
+      ).andWhere('packReleaseId', params.packReleaseId)
+    return await ControllerService.includeRelations(
+      PackItem.query().where('packReleaseId', params.packReleaseId),
+      request.input('includes')
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('store'))
       return response.forbidden('Insufficient permissions')
 
@@ -62,15 +82,21 @@ export default class PackItemsController {
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackItem))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     const requestedPackItem = await PackItem.findBy({ id: params.id })
     if (requestedPackItem === null || requestedPackItem === undefined) return response.notFound()
 
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('show', requestedPackItem))
       return response.forbidden('Insufficient permissions')
-    return await PackItem.findBy({ id: params.id })
+    return await ControllerService.includeRelations(
+      PackItem.query().where('id', params.id),
+      request.input('includes')
+    )
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {
@@ -79,6 +105,8 @@ export default class PackItemsController {
     const requestedPackItem = await PackItem.findBy({ id: params.id })
     if (requestedPackItem === null || requestedPackItem === undefined) return response.notFound()
 
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('update', requestedPackItem))
       return response.forbidden('Insufficient permissions')
 
@@ -95,6 +123,8 @@ export default class PackItemsController {
     const requestedPackItem = await PackItem.findBy({ id: params.id })
     if (requestedPackItem === null || requestedPackItem === undefined) return response.notFound()
 
+    // unfair warning, adonis resolves ts-ignore here
+    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackItemPolicy).denies('destroy', requestedPackItem))
       return response.forbidden('Insufficient permissions')
     return await requestedPackItem.delete()
