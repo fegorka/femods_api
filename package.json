@@ -12,7 +12,8 @@
   "scripts": {
     "start": "node bin/server.js",
     "build": "node ace build",
-    "serve": "node ace serve --watch",
+    "serve": "npm run typecheck && node ace serve --watch",
+    "serve-no-typecheck": "node ace serve --watch",
     "test": "node ace test",
     "lint": "eslint .",
     "format": "prettier --write .",
