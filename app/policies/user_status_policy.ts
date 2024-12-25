@@ -5,7 +5,7 @@ import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 
 export default class UserStatusPolicy extends BasePolicy {
-  async index(user: User): Promise<AuthorizerResponse> {
+  async index(): Promise<AuthorizerResponse> {
     return true
   }
 

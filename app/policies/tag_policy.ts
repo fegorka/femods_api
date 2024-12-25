@@ -5,7 +5,7 @@ import RoleService from '#services/role_service'
 
 export default class TagPolicy extends BasePolicy {
   @allowGuest()
-  async index(user: User): Promise<AuthorizerResponse> {
+  async index(): Promise<AuthorizerResponse> {
     return true
   }
 
@@ -14,7 +14,7 @@ export default class TagPolicy extends BasePolicy {
   }
 
   @allowGuest()
-  async show(user: User): Promise<AuthorizerResponse> {
+  async show(): Promise<AuthorizerResponse> {
     return true
   }
 
