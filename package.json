@@ -29,6 +29,8 @@
     "#events/*": "./app/events/*.js",
     "#middleware/*": "./app/middleware/*.js",
     "#validators/*": "./app/validators/*.js",
+    "#validation_rules/*": "./app/validators/rules/*.js",
+    "#validation_macros/*": "./app/validators/macros/*.js",
     "#providers/*": "./providers/*.js",
     "#policies/*": "./app/policies/*.js",
     "#abilities/*": "./app/abilities/*.js",
