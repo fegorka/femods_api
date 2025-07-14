@@ -4,12 +4,23 @@
   "private": true,
   "type": "module",
   "license": "CC-BY-NC-ND-4.0",
+  "homepage": "https://github.com/fegorka/femods_api#readme",
   "author": {
     "name": "Egor Fokin",
-    "email": "618.egorka@gmail.com",
-    "url": "https://t.me/fegorka"
+    "email": "dm@fegorka.com",
+    "url": "https://fegorka.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fegorka/femods_api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fegorka/femods_api/issues"
   },
   "scripts": {
+    "bump": "standard-version --skip.tag",
+    "release": "npm run build && git flow release start `node bin/nextVersion.js`",
+    "finish": "git flow release finish `node bin/currentVersion.js`",
     "start": "node bin/server.js",
     "build": "node ace build",
     "serve": "tsc && node ace serve --watch",
@@ -49,7 +60,8 @@
     "@swc/core": "^1.4.14",
     "@types/luxon": "^3.4.2",
     "@types/node": "^20.12.7",
-    "commitizen": "^4.3.0",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.57.0",
     "pino-pretty": "^11.0.0",
     "prettier": "^3.2.5",
