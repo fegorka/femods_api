@@ -5,7 +5,7 @@ import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 
 export default class UserStatusPolicy extends BasePolicy {
-  async index(user: User): Promise<AuthorizerResponse> {
+  async index(_user: User): Promise<AuthorizerResponse> {
     return true
   }
 
@@ -17,11 +17,11 @@ export default class UserStatusPolicy extends BasePolicy {
     return user.userStatusId === userStatus.id || RoleService.userHaveRoleCheck(['super'], user)
   }
 
-  async update(user: User): Promise<AuthorizerResponse> {
+  async update(user: User, _userStatus: UserStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 
-  async destroy(user: User): Promise<AuthorizerResponse> {
+  async destroy(user: User, _userStatus: UserStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 }

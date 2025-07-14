@@ -1,19 +1,14 @@
-import factory from '@adonisjs/lucid/factories'
-import Pack from '#models/pack'
-import { UserFactory } from '#database/factories/user_factory'
-import PackVisibleLevel from '#models/pack_visible_level'
 import { randomInt } from 'node:crypto'
-import PackModCore from '#models/pack_mod_core'
+import factory from '@adonisjs/lucid/factories'
 import { cuid } from '@adonisjs/core/helpers'
+import Pack from '#models/pack'
+import PackVisibleLevel from '#models/pack_visible_level'
+import PackModCore from '#models/pack_mod_core'
+import { UserFactory } from '#database/factories/user_factory'
 import { PackReleaseFactory } from '#database/factories/pack_release_factory'
-import Tag from '#models/tag'
-import PackStatus from '#models/pack_status'
 
 export const PackFactory = factory
-  .define(Pack, async ({ faker }) => {
-    const truncateString = (str: string, maxLength: number) =>
-      str.length > maxLength ? str.slice(0, maxLength) : str
-
+  .define(Pack, async ({}) => {
     const packVisibleLevels = await PackVisibleLevel.all()
     const packModCores = await PackModCore.all()
     return {
