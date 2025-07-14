@@ -117,6 +117,7 @@ router
       .use(['index', 'store', 'show', 'update', 'destroy'], middleware.auth({ guards: ['api'] }))
   })
   .prefix('api')
+  .use(middleware.verify())
 
 router
   .group(() => {
@@ -129,6 +130,7 @@ router
     router.get('users/:userId/packs', '#controllers/packs_controller.indexByUser')
   })
   .prefix('api')
+  .use(middleware.verify())
 
 router
   .group(() => {
@@ -140,6 +142,7 @@ router
     router.get('packs/:packId/packreleases', '#controllers/pack_releases_controller.indexByPack')
   })
   .prefix('api')
+  .use(middleware.verify())
 
 router
   .group(() => {
@@ -154,6 +157,7 @@ router
     )
   })
   .prefix('api')
+  .use(middleware.verify())
 
 router
   .group(() => {
@@ -168,3 +172,4 @@ router
     )
   })
   .prefix('api')
+  .use(middleware.verify())
