@@ -14,15 +14,15 @@ export default class PackItemSafeStatusPolicy extends BasePolicy {
   }
 
   @allowGuest()
-  async show(user: User): Promise<AuthorizerResponse> {
+  async show(_user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return true
   }
 
-  async update(user: User): Promise<AuthorizerResponse> {
+  async update(user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 
-  async destroy(user: User): Promise<AuthorizerResponse> {
+  async destroy(user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 }
