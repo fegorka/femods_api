@@ -4,12 +4,13 @@ import PackItemTypePolicy from '#policies/pack_item_type_policy'
 import { requestParamsCuidValidator } from '#validators/request'
 import ControllerService from '#services/controller_service'
 import { storePackItemTypeValidator, updatePackItemTypeValidator } from '#validators/pack_item_type'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackItemTypesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackItemTypePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await PackItemType.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await PackItemType.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -23,7 +24,11 @@ export default class PackItemTypesController {
 
     if (await bouncer.with(PackItemTypePolicy).denies('show', requestedPackItemType))
       return response.forbidden('Insufficient permissions')
-    return await PackItemType.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItemType.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

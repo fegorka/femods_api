@@ -4,12 +4,13 @@ import GameVersionPolicy from '#policies/game_version_policy'
 import GameVersion from '#models/game_version'
 import { requestParamsCuidValidator } from '#validators/request'
 import { storeGameVersionValidator, updateGameVersionValidator } from '#validators/game_version'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class GameVersionsController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(GameVersionPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await GameVersion.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await GameVersion.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -23,7 +24,7 @@ export default class GameVersionsController {
 
     if (await bouncer.with(GameVersionPolicy).denies('show', requestedGameVersion))
       return response.forbidden('Insufficient permissions')
-    return await GameVersion.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(request, 120, async () => await GameVersion.findBy({ id: params.id }))
   }
 
   async store({ bouncer, response, request }: HttpContext) {

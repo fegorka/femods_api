@@ -4,12 +4,13 @@ import ControllerService from '#services/controller_service'
 import { requestParamsCuidValidator } from '#validators/request'
 import PackStatusPolicy from '#policies/pack_status_policy'
 import { storePackStatusValidator, updatePackStatusValidator } from '#validators/pack_status'
+import { ResponseCacheService } from "#services/response_cache_service";
 
 export default class PackStatusesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await PackStatus.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await PackStatus.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -23,7 +24,7 @@ export default class PackStatusesController {
 
     if (await bouncer.with(PackStatusPolicy).denies('show', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
-    return await PackStatus.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(request, 120, async () => await PackStatus.findBy({ id: params.id }))
   }
 
   async store({ bouncer, response, request }: HttpContext) {

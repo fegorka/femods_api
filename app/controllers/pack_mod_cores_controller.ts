@@ -4,12 +4,13 @@ import PackModCore from '#models/pack_mod_core'
 import PackModCorePolicy from '#policies/pack_mod_core_policy'
 import { requestParamsCuidValidator } from '#validators/request'
 import { storePackModCoreValidator, updatepackModCoreValidator } from '#validators/pack_mod_core'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackModCoresController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackModCorePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await PackModCore.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await PackModCore.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -23,7 +24,11 @@ export default class PackModCoresController {
 
     if (await bouncer.with(PackModCorePolicy).denies('show', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
-    return await PackModCore.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackModCore.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

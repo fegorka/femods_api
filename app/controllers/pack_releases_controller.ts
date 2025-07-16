@@ -11,6 +11,7 @@ import {
 import ControllerService from '#services/controller_service'
 import User from '#models/user'
 import Pack from '#models/pack'
+import { ResponseCacheService} from '#services/response_cache_service'
 
 export default class PackReleasesController {
   async index({ auth, bouncer, request }: HttpContext) {
@@ -19,9 +20,14 @@ export default class PackReleasesController {
     await request.validateUsing(requestPageValidator)
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return this.packReleaseIndexWithoutHiddenPacksQuery.paginate(
-        request.input('page'),
-        request.input('limit')
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+        await this.packReleaseIndexWithoutHiddenPacksQuery.paginate(
+          request.input('page'),
+          request.input('limit')
+        )
       )
     return await PackRelease.query().paginate(request.input('page'), request.input('limit'))
   }
@@ -37,8 +43,14 @@ export default class PackReleasesController {
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packId })
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return this.packReleaseIndexWithoutHiddenPacksQuery.andWhere('packId', params.packId)
-    return await PackRelease.findManyBy({ packId: params.packId })
+      return await ResponseCacheService.getOrSet(request, 120, async () =>
+        await this.packReleaseIndexWithoutHiddenPacksQuery.andWhere('packId', params.packId)
+      )
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackRelease.findManyBy({ packId: params.packId })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -61,7 +73,11 @@ export default class PackReleasesController {
 
     if (await bouncer.with(PackReleasePolicy).denies('show', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
-    return await PackRelease.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackRelease.findBy({ id: params.id })
+    )
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {

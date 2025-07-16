@@ -12,6 +12,7 @@ import {
 import Pack from '#models/pack'
 import User from '#models/user'
 import PackRelease from '#models/pack_release'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackPreDownloadQuestionsController {
   async index({ auth, bouncer, request }: HttpContext) {
@@ -20,13 +21,23 @@ export default class PackPreDownloadQuestionsController {
     await request.validateUsing(requestPageValidator)
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.paginate(
-        request.input('page'),
-        request.input('limit')
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.paginate(
+            request.input('page'),
+            request.input('limit')
+          )
       )
-    return await PackPreDownloadQuestion.query().paginate(
-      request.input('page'),
-      request.input('limit')
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await PackPreDownloadQuestion.query().paginate(
+          request.input('page'),
+          request.input('limit')
+        )
     )
   }
 
@@ -45,11 +56,20 @@ export default class PackPreDownloadQuestionsController {
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.andWhere(
-        'packReleaseId',
-        params.packReleaseId
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.andWhere(
+            'packReleaseId',
+            params.packReleaseId
+          )
       )
-    return await PackRelease.findManyBy({ packReleaseId: params.packReleaseId })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackRelease.findManyBy({ packReleaseId: params.packReleaseId })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -78,7 +98,11 @@ export default class PackPreDownloadQuestionsController {
         .denies('show', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')
-    return await PackPreDownloadQuestion.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackPreDownloadQuestion.findBy({ id: params.id })
+    )
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {
