@@ -4,6 +4,7 @@ import TagPolicy from '#policies/tag_policy'
 import Tag from '#models/tag'
 import { storeTagValidator, updateTagValidator } from '#validators/tag'
 import ControllerService from '#services/controller_service'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class TagsController {
   async index({ auth, bouncer, response, request }: HttpContext) {
@@ -11,7 +12,7 @@ export default class TagsController {
 
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await Tag.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await Tag.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -24,7 +25,11 @@ export default class TagsController {
 
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
-    return await Tag.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await Tag.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

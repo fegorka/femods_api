@@ -7,12 +7,17 @@ import {
   storePackItemSafeStatusValidator,
   updatePackItemSafeStatusValidator,
 } from '#validators/pack_item_safe_status'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackItemSafeStatusesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await PackItemSafeStatus.all()
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItemSafeStatus.all()
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -26,7 +31,11 @@ export default class PackItemSafeStatusesController {
 
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('show', requestedPackItemSafeStatus))
       return response.forbidden('Insufficient permissions')
-    return await PackItemSafeStatus.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItemSafeStatus.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

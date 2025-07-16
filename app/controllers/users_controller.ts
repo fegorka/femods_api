@@ -8,6 +8,7 @@ import {
   requestParamsCuidValidator,
   requestSearchValidator,
 } from '#validators/request'
+import { ResponseCacheService } from "#services/response_cache_service";
 
 export default class UsersController {
   async index({ bouncer, response, request }: HttpContext) {
@@ -17,13 +18,22 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
     if (!request.input('search'))
-      return await User.query().paginate(request.input('page'), request.input('limit'))
-    return await User.query()
-      .andWhereILike('name', `%${request.input('search')}%`)
-      .orWhereILike('publicName', `%${request.input('search')}%`)
-      .orWhereILike('id', request.input('search'))
-      .orWhereILike('publicId', request.input('search'))
-      .paginate(request.input('page'), request.input('limit'))
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () => await User.query().paginate(request.input('page'), request.input('limit'))
+      )
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await User.query()
+          .andWhereILike('name', `%${request.input('search')}%`)
+          .orWhereILike('publicName', `%${request.input('search')}%`)
+          .orWhereILike('id', request.input('search'))
+          .orWhereILike('publicId', request.input('search'))
+          .paginate(request.input('page'), request.input('limit'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -36,7 +46,11 @@ export default class UsersController {
 
     if (await bouncer.with(UserPolicy).denies('show', requestedUser))
       return response.forbidden('Insufficient permissions')
-    return await User.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await User.findBy({ id: params.id })
+    )
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {

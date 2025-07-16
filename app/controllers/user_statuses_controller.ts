@@ -4,12 +4,13 @@ import UserStatus from '#models/user_status'
 import UserStatusPolicy from '#policies/user_status_policy'
 import { storeUserStatusValidator, updateUserStatusValidator } from '#validators/user_status'
 import ControllerService from '#services/controller_service'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class UserStatusesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(UserStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await UserStatus.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await UserStatus.all())
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -23,7 +24,11 @@ export default class UserStatusesController {
 
     if (await bouncer.with(UserStatusPolicy).denies('show', requestedUserStatus))
       return response.forbidden('Insufficient permissions')
-    return await UserStatus.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await UserStatus.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

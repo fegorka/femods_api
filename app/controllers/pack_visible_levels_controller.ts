@@ -7,12 +7,17 @@ import {
   storePackVisibleLevelValidator,
   updatePackVisibleLevelValidator,
 } from '#validators/pack_visible_level'
+import { ResponseCacheService } from "#services/response_cache_service";
 
 export default class PackVisibleLevelsController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackVisibleLevelPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await PackVisibleLevel.all()
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackVisibleLevel.all()
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -26,7 +31,11 @@ export default class PackVisibleLevelsController {
 
     if (await bouncer.with(PackVisibleLevelPolicy).denies('show', requestedPackVisibleLevel))
       return response.forbidden('Insufficient permissions')
-    return await PackVisibleLevel.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackVisibleLevel.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

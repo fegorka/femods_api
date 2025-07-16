@@ -3,12 +3,13 @@ import RolePolicy from '#policies/role_policy'
 import { requestParamsCuidValidator } from '#validators/request'
 import Role from '#models/role'
 import { storeRoleValidator, updateRoleValidator } from '#validators/role'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class RolesController {
-  async index({ bouncer, response }: HttpContext) {
+  async index({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(RolePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await Role.all()
+    return await ResponseCacheService.getOrSet(request, 120, async () => await Role.all())
   }
 
   async show({ bouncer, response, request, params }: HttpContext) {
@@ -19,7 +20,11 @@ export default class RolesController {
 
     if (await bouncer.with(RolePolicy).denies('show', requestedRole))
       return response.forbidden('Insufficient permissions')
-    return await Role.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await Role.findBy({ id: params.id })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

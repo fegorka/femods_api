@@ -12,6 +12,7 @@ import Pack from '#models/pack'
 import User from '#models/user'
 import { indexByPackReleasePackItemValidator } from '#validators/pack_item'
 import PackRelease from '#models/pack_release'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackItemsController {
   async index({ auth, bouncer, request }: HttpContext) {
@@ -20,11 +21,20 @@ export default class PackItemsController {
     await request.validateUsing(requestPageValidator)
 
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return this.packItemIndexWithoutHiddenPacksQuery.paginate(
-        request.input('page'),
-        request.input('limit')
+      return ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await this.packItemIndexWithoutHiddenPacksQuery.paginate(
+            request.input('page'),
+            request.input('limit')
+          )
       )
-    return await PackItem.query().paginate(request.input('page'), request.input('limit'))
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItem.query().paginate(request.input('page'), request.input('limit'))
+    )
   }
 
   async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
@@ -42,11 +52,20 @@ export default class PackItemsController {
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return this.packItemIndexWithoutHiddenPacksQuery.andWhere(
-        'packReleaseId',
-        params.packReleaseId
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await this.packItemIndexWithoutHiddenPacksQuery.andWhere(
+            'packReleaseId',
+            params.packReleaseId
+          )
       )
-    return await PackItem.findManyBy({ packReleaseId: params.packReleaseId })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItem.findManyBy({ packReleaseId: params.packReleaseId })
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -70,7 +89,11 @@ export default class PackItemsController {
 
     if (await bouncer.with(PackItemPolicy).denies('show', requestedPackItem))
       return response.forbidden('Insufficient permissions')
-    return await PackItem.findBy({ id: params.id })
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () => await PackItem.findBy({ id: params.id })
+    )
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {
