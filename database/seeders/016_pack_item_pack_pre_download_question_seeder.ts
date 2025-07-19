@@ -19,7 +19,7 @@ export default class extends BaseSeeder {
         return
       await packItem
         .related('packPreDownloadQuestions')
-        .attach([packPreDownloadQuestions[randomInt(packPreDownloadQuestions.length - 1)].id])
+        .attach([packPreDownloadQuestions[Math.max(randomInt(packPreDownloadQuestions.length - 1), 0)].id])
     }
   }
 }
