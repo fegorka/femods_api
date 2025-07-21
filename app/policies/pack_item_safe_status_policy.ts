@@ -1,7 +1,8 @@
-import User from '#models/user'
 import { allowGuest, BasePolicy } from '@adonisjs/bouncer'
 import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
+import User from '#models/user'
+import PackItemSafeStatus from '#models/pack_item_safe_status'
 
 export default class PackItemSafeStatusPolicy extends BasePolicy {
   async index(user: User): Promise<AuthorizerResponse> {
@@ -13,15 +14,15 @@ export default class PackItemSafeStatusPolicy extends BasePolicy {
   }
 
   @allowGuest()
-  async show(): Promise<AuthorizerResponse> {
+  async show(_user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return true
   }
 
-  async update(user: User): Promise<AuthorizerResponse> {
+  async update(user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 
-  async destroy(user: User): Promise<AuthorizerResponse> {
+  async destroy(user: User, _packItemSafeStatus: PackItemSafeStatus): Promise<AuthorizerResponse> {
     return await RoleService.userHaveRoleCheck(['super'], user)
   }
 }

@@ -4,6 +4,7 @@ import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
 import PackRelease from '#models/pack_release'
 import ControllerService from '#services/controller_service'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -26,18 +27,25 @@ export default class PackPreDownloadQuestionsController {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return ControllerService.includeRelations(
-        this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
-        request.input('includes')
-      ).paginate(request.input('page'), request.input('limit'))
-
-    return await ControllerService.includeRelations(
-      PackPreDownloadQuestion.query(),
-      request.input('includes')
-    ).paginate(request.input('page'), request.input('limit'))
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
+      )
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackPreDownloadQuestion.query(),
+          request.input('includes')
+        ).paginate(request.input('page'), request.input('limit'))
+    )
   }
 
   async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
@@ -55,23 +63,28 @@ export default class PackPreDownloadQuestionsController {
 
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ControllerService.includeRelations(
-        this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
-        request.input('includes')
-      ).andWhere('packReleaseId', params.packReleaseId)
-
-    return await ControllerService.includeRelations(
-      PackRelease.query().where('packReleaseId', params.packReleaseId),
-      request.input('includes')
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).andWhere('packReleaseId', params.packReleaseId)
+      )
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('packReleaseId', params.packReleaseId),
+          request.input('includes')
+        )
     )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('store'))
       return response.forbidden('Insufficient permissions')
 
@@ -95,14 +108,17 @@ export default class PackPreDownloadQuestionsController {
     if (
       await bouncer
         .with(PackPreDownloadQuestionPolicy)
-        // unfair warning, adonis resolves ts-ignore here
-        // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
         .denies('show', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.includeRelations(
-      PackPreDownloadQuestion.query().where('id', params.id),
-      request.input('includes')
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackPreDownloadQuestion.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 
@@ -116,8 +132,6 @@ export default class PackPreDownloadQuestionsController {
     if (
       await bouncer
         .with(PackPreDownloadQuestionPolicy)
-        // unfair warning, adonis resolves ts-ignore here
-        // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
         .denies('update', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')
@@ -145,8 +159,6 @@ export default class PackPreDownloadQuestionsController {
     if (
       await bouncer
         .with(PackPreDownloadQuestionPolicy)
-        // unfair warning, adonis resolves ts-ignore here
-        // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
         .denies('destroy', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')

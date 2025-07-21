@@ -6,16 +6,20 @@ import ControllerService from '#services/controller_service'
 
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storePackModCoreValidator, updatepackModCoreValidator } from '#validators/pack_mod_core'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackModCoresController {
   async index({ bouncer, response, request }: HttpContext) {
     await request.validateUsing(requestIncludeValidator(PackModCore))
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackModCorePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.includeRelations(PackModCore.query(), request.input('includes'))
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(PackModCore.query(), request.input('includes'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
@@ -28,19 +32,20 @@ export default class PackModCoresController {
     if (requestedPackModCore === null || requestedPackModCore === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackModCorePolicy).denies('show', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.includeRelations(
-      PackModCore.query().where('id', params.id),
-      request.input('includes')
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackModCore.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackModCorePolicy).denies('store'))
       return response.forbidden('Insufficient permissions')
 
@@ -55,8 +60,6 @@ export default class PackModCoresController {
     if (requestedPackModCore === null || requestedPackModCore === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackModCorePolicy).denies('update', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
 
@@ -71,8 +74,6 @@ export default class PackModCoresController {
     if (requestedPackModCore === null || requestedPackModCore === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackModCorePolicy).denies('destroy', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
     return await requestedPackModCore.delete()

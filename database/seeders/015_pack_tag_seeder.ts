@@ -11,7 +11,7 @@ export default class extends BaseSeeder {
 
     for (const pack of packs) {
       if ((await Pack.query().where('id', pack.id).andHas('tags').first()) !== null) return
-      await pack.related('tags').attach([tags[randomInt(tags.length - 1)].id])
+      await pack.related('tags').attach([tags[Math.max(randomInt(tags.length - 1), 0)].id])
     }
     // ⚠️ using another loop causes an "error: aborted" (work with database connections pool)
     // in some package (maybe knex) contained in lucid

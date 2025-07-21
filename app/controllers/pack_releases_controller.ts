@@ -5,6 +5,7 @@ import PackReleasePolicy from '#policies/pack_release_policy'
 import User from '#models/user'
 import Pack from '#models/pack'
 import ControllerService from '#services/controller_service'
+import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -25,17 +26,22 @@ export default class PackReleasesController {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackRelease))
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return ControllerService.includeRelations(
-        this.packReleaseIndexWithoutHiddenPacksQuery,
-        request.input('includes')
-      ).paginate(request.input('page'), request.input('limit'))
-    return await ControllerService.includeRelations(
-      PackRelease.query(),
-      request.input('includes')
-    ).paginate(request.input('page'), request.input('limit'))
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packReleaseIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
+      )
+    return await ResponseCacheService.getOrSet(request, 120, async () =>
+      ControllerService.includeRelations(PackRelease.query(), request.input('includes')).paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    )
   }
 
   async indexByPack({ auth, bouncer, request, params }: HttpContext) {
@@ -49,28 +55,33 @@ export default class PackReleasesController {
     const packUserId = pack && pack.userId !== undefined ? pack.userId : null
 
     if (userId === packUserId)
-      return await ControllerService.includeRelations(
+      return ControllerService.includeRelations(
         PackRelease.query().where('packId', params.packId),
         request.input('includes')
       )
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return await ControllerService.includeRelations(
-        this.packReleaseIndexWithoutHiddenPacksQuery,
-        request.input('includes')
-      ).andWhere('packId', params.packId)
-
-    return await ControllerService.includeRelations(
-      PackRelease.query().where('packId', params.packId),
-      request.input('includes')
+      return await ResponseCacheService.getOrSet(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packReleaseIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).andWhere('packId', params.packId)
+      )
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('packId', params.packId),
+          request.input('includes')
+        )
     )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('store'))
       return response.forbidden('Insufficient permissions')
 
@@ -89,13 +100,16 @@ export default class PackReleasesController {
     if (requestedPackRelease === null || requestedPackRelease === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('show', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.includeRelations(
-      PackRelease.query().where('id', params.id),
-      request.input('includes')
+    return await ResponseCacheService.getOrSet(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 
@@ -106,8 +120,6 @@ export default class PackReleasesController {
     if (requestedPackRelease === null || requestedPackRelease === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('update', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
 
@@ -125,8 +137,6 @@ export default class PackReleasesController {
     if (requestedPackRelease === null || requestedPackRelease === undefined)
       return response.notFound()
 
-    // unfair warning, adonis resolves ts-ignore here
-    // @ts-ignore: Argument of type 'string' is not assignable to parameter of type 'never'
     if (await bouncer.with(PackReleasePolicy).denies('destroy', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
     return await requestedPackRelease.delete()

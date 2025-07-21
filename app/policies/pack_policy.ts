@@ -1,7 +1,7 @@
-import User from '#models/user'
 import { allowGuest, BasePolicy } from '@adonisjs/bouncer'
 import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
+import User from '#models/user'
 import PackStatus from '#models/pack_status'
 import Pack from '#models/pack'
 import PackVisibleLevel from '#models/pack_visible_level'
