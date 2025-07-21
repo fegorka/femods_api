@@ -6,14 +6,13 @@ import ControllerService from '#services/controller_service'
 
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storeGameVersionValidator, updateGameVersionValidator } from '#validators/game_version'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class GameVersionsController {
   async index({ bouncer, response, request }: HttpContext) {
     await request.validateUsing(requestIncludeValidator(GameVersion))
     if (await bouncer.with(GameVersionPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -33,7 +32,7 @@ export default class GameVersionsController {
 
     if (await bouncer.with(GameVersionPolicy).denies('show', requestedGameVersion))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

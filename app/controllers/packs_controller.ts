@@ -4,7 +4,6 @@ import Pack from '#models/pack'
 import PackPolicy from '#policies/pack_policy'
 import User from '#models/user'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -29,7 +28,7 @@ export default class PacksController {
 
     if (request.input('search')) {
       if (await bouncer.with(PackPolicy).denies('index'))
-        return await ResponseCacheService.getOrSet(
+        return await ControllerService.getOrSetCache(
           request,
           120,
           async () =>
@@ -44,7 +43,7 @@ export default class PacksController {
               })
               .paginate(request.input('page'), request.input('limit'))
         )
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -59,7 +58,7 @@ export default class PacksController {
     }
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -68,7 +67,7 @@ export default class PacksController {
             request.input('includes')
           ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -87,7 +86,7 @@ export default class PacksController {
     await request.validateUsing(requestIncludeValidator(Pack))
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -100,7 +99,7 @@ export default class PacksController {
               .paginate(request.input('page'), request.input('limit'))
           })
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -126,7 +125,7 @@ export default class PacksController {
     if (userId === params.userId) return Pack.findManyBy({ userId: params.userId })
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -137,7 +136,7 @@ export default class PacksController {
             .andWhere('userId', params.userId)
             .paginate(request.body().page, 30)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -169,7 +168,7 @@ export default class PacksController {
 
     if (await bouncer.with(PackPolicy).denies('show', requestedPack))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

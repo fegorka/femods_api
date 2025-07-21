@@ -6,7 +6,6 @@ import ControllerService from '#services/controller_service'
 
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storePackItemTypeValidator, updatePackItemTypeValidator } from '#validators/pack_item_type'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackItemTypesController {
   async index({ bouncer, response, request }: HttpContext) {
@@ -14,7 +13,7 @@ export default class PackItemTypesController {
 
     if (await bouncer.with(PackItemTypePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -34,7 +33,7 @@ export default class PackItemTypesController {
 
     if (await bouncer.with(PackItemTypePolicy).denies('show', requestedPackItemType))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

@@ -6,7 +6,6 @@ import Pack from '#models/pack'
 import PackRelease from '#models/pack_release'
 import User from '#models/user'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -28,13 +27,13 @@ export default class PackItemsController {
     await request.validateUsing(requestIncludeValidator(PackItem))
 
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return ResponseCacheService.getOrSet(request, 120, async () =>
+      return ControllerService.getOrSetCache(request, 120, async () =>
         ControllerService.includeRelations(
           this.packItemIndexWithoutHiddenPacksQuery,
           request.input('includes')
         ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -60,7 +59,7 @@ export default class PackItemsController {
 
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
     if (await bouncer.with(PackItemPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -69,7 +68,7 @@ export default class PackItemsController {
             request.input('includes')
           ).andWhere('packReleaseId', params.packReleaseId)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -102,7 +101,7 @@ export default class PackItemsController {
 
     if (await bouncer.with(PackItemPolicy).denies('show', requestedPackItem))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

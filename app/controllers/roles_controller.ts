@@ -6,7 +6,6 @@ import ControllerService from '#services/controller_service'
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 
 import { storeRoleValidator, updateRoleValidator } from '#validators/role'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class RolesController {
   async index({ bouncer, response, request }: HttpContext) {
@@ -14,7 +13,7 @@ export default class RolesController {
 
     if (await bouncer.with(RolePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () => await ControllerService.includeRelations(Role.query(), request.input('includes'))
@@ -30,7 +29,7 @@ export default class RolesController {
 
     if (await bouncer.with(RolePolicy).denies('show', requestedRole))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

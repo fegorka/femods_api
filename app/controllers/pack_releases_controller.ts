@@ -5,7 +5,6 @@ import PackReleasePolicy from '#policies/pack_release_policy'
 import User from '#models/user'
 import Pack from '#models/pack'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -27,7 +26,7 @@ export default class PackReleasesController {
     await request.validateUsing(requestIncludeValidator(PackRelease))
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -36,7 +35,7 @@ export default class PackReleasesController {
             request.input('includes')
           ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(request, 120, async () =>
+    return await ControllerService.getOrSetCache(request, 120, async () =>
       ControllerService.includeRelations(PackRelease.query(), request.input('includes')).paginate(
         request.input('page'),
         request.input('limit')
@@ -61,7 +60,7 @@ export default class PackReleasesController {
       )
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -70,7 +69,7 @@ export default class PackReleasesController {
             request.input('includes')
           ).andWhere('packId', params.packId)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -102,7 +101,7 @@ export default class PackReleasesController {
 
     if (await bouncer.with(PackReleasePolicy).denies('show', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

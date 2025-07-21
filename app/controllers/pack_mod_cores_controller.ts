@@ -6,7 +6,6 @@ import ControllerService from '#services/controller_service'
 
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storePackModCoreValidator, updatepackModCoreValidator } from '#validators/pack_mod_core'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackModCoresController {
   async index({ bouncer, response, request }: HttpContext) {
@@ -14,7 +13,7 @@ export default class PackModCoresController {
 
     if (await bouncer.with(PackModCorePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -34,7 +33,7 @@ export default class PackModCoresController {
 
     if (await bouncer.with(PackModCorePolicy).denies('show', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

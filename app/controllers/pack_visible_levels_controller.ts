@@ -3,7 +3,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackVisibleLevel from '#models/pack_visible_level'
 import PackVisibleLevelPolicy from '#policies/pack_visible_level_policy'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   storePackVisibleLevelValidator,
@@ -17,7 +16,7 @@ export default class PackVisibleLevelsController {
 
     if (await bouncer.with(PackVisibleLevelPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -41,7 +40,7 @@ export default class PackVisibleLevelsController {
 
     if (await bouncer.with(PackVisibleLevelPolicy).denies('show', requestedPackVisibleLevel))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

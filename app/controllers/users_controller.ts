@@ -3,7 +3,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import UserPolicy from '#policies/user_policy'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import { updateUserValidator } from '#validators/user'
 import {
@@ -22,7 +21,7 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
     if (!request.input('search'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -31,7 +30,7 @@ export default class UsersController {
             request.input('includes')
           ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -55,7 +54,7 @@ export default class UsersController {
 
     if (await bouncer.with(UserPolicy).denies('show', requestedUser))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

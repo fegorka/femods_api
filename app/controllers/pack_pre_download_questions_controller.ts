@@ -4,7 +4,6 @@ import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
 import PackRelease from '#models/pack_release'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import {
   requestIncludeValidator,
@@ -28,7 +27,7 @@ export default class PackPreDownloadQuestionsController {
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -37,7 +36,7 @@ export default class PackPreDownloadQuestionsController {
             request.input('includes')
           ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -64,7 +63,7 @@ export default class PackPreDownloadQuestionsController {
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
@@ -73,7 +72,7 @@ export default class PackPreDownloadQuestionsController {
             request.input('includes')
           ).andWhere('packReleaseId', params.packReleaseId)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
@@ -111,7 +110,7 @@ export default class PackPreDownloadQuestionsController {
         .denies('show', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>

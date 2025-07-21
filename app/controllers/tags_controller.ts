@@ -3,7 +3,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Tag from '#models/tag'
 import TagPolicy from '#policies/tag_policy'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 import { storeTagValidator, updateTagValidator } from '#validators/tag'
 import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
@@ -16,7 +15,7 @@ export default class TagsController {
 
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () => await ControllerService.includeRelations(Tag.query(), request.input('includes'))
@@ -34,7 +33,7 @@ export default class TagsController {
 
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
