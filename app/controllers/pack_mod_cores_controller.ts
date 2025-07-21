@@ -1,20 +1,29 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import ControllerService from '#services/controller_service'
+
 import PackModCore from '#models/pack_mod_core'
 import PackModCorePolicy from '#policies/pack_mod_core_policy'
-import { requestParamsCuidValidator } from '#validators/request'
+import ControllerService from '#services/controller_service'
+
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storePackModCoreValidator, updatepackModCoreValidator } from '#validators/pack_mod_core'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackModCoresController {
   async index({ bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(PackModCore))
+
     if (await bouncer.with(PackModCorePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await PackModCore.all())
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(PackModCore.query(), request.input('includes'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackModCore))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -24,10 +33,14 @@ export default class PackModCoresController {
 
     if (await bouncer.with(PackModCorePolicy).denies('show', requestedPackModCore))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackModCore.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          PackModCore.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

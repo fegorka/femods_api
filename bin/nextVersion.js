@@ -1,7 +1,6 @@
 const { execSync } = require('child_process')
 
-const getDryRunOutput = () =>
-  execSync('npx standard-version --dry-run', { encoding: 'utf8' })
+const getDryRunOutput = () => execSync('npx standard-version --dry-run', { encoding: 'utf8' })
 
 const extractVersion = (output) => {
   const match = output.match(/release v(\d+\.\d+\.\d+)/)

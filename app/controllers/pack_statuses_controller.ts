@@ -1,20 +1,29 @@
 import type { HttpContext } from '@adonisjs/core/http'
+
 import PackStatus from '#models/pack_status'
-import ControllerService from '#services/controller_service'
-import { requestParamsCuidValidator } from '#validators/request'
 import PackStatusPolicy from '#policies/pack_status_policy'
+import ControllerService from '#services/controller_service'
+
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storePackStatusValidator, updatePackStatusValidator } from '#validators/pack_status'
-import { ResponseCacheService } from "#services/response_cache_service";
 
 export default class PackStatusesController {
   async index({ bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(PackStatus))
+
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await PackStatus.all())
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(PackStatus.query(), request.input('includes'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackStatus))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -24,7 +33,15 @@ export default class PackStatusesController {
 
     if (await bouncer.with(PackStatusPolicy).denies('show', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await PackStatus.findBy({ id: params.id }))
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          PackStatus.query().where('id', params.id),
+          request.input('includes')
+        )
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {

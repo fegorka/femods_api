@@ -5,6 +5,7 @@ import env from '#start/env'
 import vine from '@vinejs/vine'
 import { RequestSignService } from '#services/request_sign_service'
 import { MemoryStoreService } from '#services/memory_store_service'
+import '#validation_macros/is_cuid_macro'
 
 export default class VerifyMiddleware {
   async handle(
@@ -21,9 +22,9 @@ export default class VerifyMiddleware {
     try {
       await vine.validate({
         schema: vine.object({
-          'x-signature-hash': vine.string(),
-          'x-signature-timestamp': vine.number().positive().withoutDecimals(),
-          'x-signature-nonce': vine.string(),
+          'x-signature-hash': vine.string().maxLength(64),
+          'x-signature-timestamp': vine.number().positive().withoutDecimals().max(999999999999999),
+          'x-signature-nonce': vine.string().cuid(),
         }),
         data: request.headers(),
       })

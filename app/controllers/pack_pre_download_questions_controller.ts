@@ -1,8 +1,15 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
+
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
-import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
+import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
+import PackRelease from '#models/pack_release'
 import ControllerService from '#services/controller_service'
+
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+} from '#validators/request'
 import {
   indexByPackReleasePackPreDownloadQuestionValidator,
   preCheckPackPreDownloadQuestionReleaseIdValidator,
@@ -11,33 +18,32 @@ import {
 } from '#validators/pack_pre_download_question'
 import Pack from '#models/pack'
 import User from '#models/user'
-import PackRelease from '#models/pack_release'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackPreDownloadQuestionsController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
-          await this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.paginate(
-            request.input('page'),
-            request.input('limit')
-          )
+          await ControllerService.includeRelations(
+            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
-        await PackPreDownloadQuestion.query().paginate(
-          request.input('page'),
-          request.input('limit')
-        )
+        await ControllerService.includeRelations(
+          PackPreDownloadQuestion.query(),
+          request.input('includes')
+        ).paginate(request.input('page'), request.input('limit'))
     )
   }
 
@@ -45,6 +51,7 @@ export default class PackPreDownloadQuestionsController {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(indexByPackReleasePackPreDownloadQuestionValidator)
+    await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
 
     const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
     const packReleasePackId =
@@ -56,19 +63,23 @@ export default class PackPreDownloadQuestionsController {
     if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
 
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
-          await this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery.andWhere(
-            'packReleaseId',
-            params.packReleaseId
-          )
+          await ControllerService.includeRelations(
+            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).andWhere('packReleaseId', params.packReleaseId)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackRelease.findManyBy({ packReleaseId: params.packReleaseId })
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('packReleaseId', params.packReleaseId),
+          request.input('includes')
+        )
     )
   }
 
@@ -85,6 +96,7 @@ export default class PackPreDownloadQuestionsController {
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -98,10 +110,14 @@ export default class PackPreDownloadQuestionsController {
         .denies('show', requestedPackPreDownloadQuestion)
     )
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackPreDownloadQuestion.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          PackPreDownloadQuestion.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

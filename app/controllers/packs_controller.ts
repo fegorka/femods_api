@@ -1,8 +1,12 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import ControllerService from '#services/controller_service'
+
 import Pack from '#models/pack'
 import PackPolicy from '#policies/pack_policy'
+import User from '#models/user'
+import ControllerService from '#services/controller_service'
+
 import {
+  requestIncludeValidator,
   requestPageValidator,
   requestParamsCuidValidator,
   requestSearchValidator,
@@ -13,8 +17,6 @@ import {
   storePackValidator,
   updatePackValidator,
 } from '#validators/pack'
-import User from '#models/user'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PacksController {
   async index({ auth, bouncer, request }: HttpContext) {
@@ -22,23 +24,30 @@ export default class PacksController {
 
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
+    await request.validateUsing(requestIncludeValidator(Pack))
 
     if (request.input('search')) {
       if (await bouncer.with(PackPolicy).denies('index'))
-        return await ResponseCacheService.getOrSet(request, 120, async () =>
-          await this.packIndexWithoutHiddenPacksQuery
-            .andWhereILike('name', `%${request.input('search')}%`)
-            .orWhereILike('publicName', `%${request.input('search')}%`)
-            .orWhereHas('user', (userQuery) => {
-              userQuery.whereILike('name', `%${request.input('search')}%`)
-            })
-            .paginate(request.input('page'), request.input('limit'))
+        return await ControllerService.getOrSetCache(
+          request,
+          120,
+          async () =>
+            await ControllerService.includeRelations(
+              this.packIndexWithoutHiddenPacksQuery,
+              request.input('includes')
+            )
+              .andWhereILike('name', `%${request.input('search')}%`)
+              .orWhereILike('publicName', `%${request.input('search')}%`)
+              .orWhereHas('user', (userQuery) => {
+                userQuery.whereILike('name', `%${request.input('search')}%`)
+              })
+              .paginate(request.input('page'), request.input('limit'))
         )
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
-          await Pack.query()
+          await ControllerService.includeRelations(Pack.query(), request.input('includes'))
             .andWhereILike('name', `%${request.input('search')}%`)
             .orWhereILike('publicName', `%${request.input('search')}%`)
             .orWhereHas('user', (userQuery) => {
@@ -49,14 +58,23 @@ export default class PacksController {
     }
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(request, 120, async () => await this.packIndexWithoutHiddenPacksQuery.paginate(
-        request.input('page'),
-        request.input('limit')
-    ))
-    return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
+      )
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await Pack.query().paginate(request.input('page'), request.input('limit'))
+      async () =>
+        await ControllerService.includeRelations(Pack.query(), request.input('includes')).paginate(
+          request.input('page'),
+          request.input('limit')
+        )
     )
   }
 
@@ -65,17 +83,34 @@ export default class PacksController {
 
     await request.validateUsing(indexByTagPackValidator)
     await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(Pack))
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(request, 120, async () =>
-        await this.packIndexWithoutHiddenPacksQuery.andWhereHas('tags', (tagsQuery) => {
-          tagsQuery.where('tag_id', params.tagId).paginate(request.body().page, 30)
-        })
+      return await ControllerService.getOrSetCache(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).andWhereHas('tags', (tagsQuery) => {
+            tagsQuery
+              .where('tag_id', params.tagId)
+              .paginate(request.input('page'), request.input('limit'))
+          })
       )
-    return await ResponseCacheService.getOrSet(request, 120, async () =>
-      await Pack.query().whereHas('tags', (tagsQuery) => {
-        tagsQuery.where('tag_id', params.tagId).paginate(request.body().page, 30)
-      })
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          this.packIndexWithoutHiddenPacksQuery,
+          request.input('includes')
+        ).whereHas('tags', (tagsQuery) => {
+          tagsQuery
+            .where('tag_id', params.tagId)
+            .paginate(request.input('page'), request.input('limit'))
+        })
     )
   }
 
@@ -84,21 +119,33 @@ export default class PacksController {
 
     await request.validateUsing(indexByUserPackValidator)
     await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(Pack))
 
     const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
     if (userId === params.userId) return Pack.findManyBy({ userId: params.userId })
 
     if (await bouncer.with(PackPolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(request, 120, async () =>
-        await this.packIndexWithoutHiddenPacksQuery
-          .andWhere('userId', params.userId)
-          .paginate(request.body().page, 30)
+      return await ControllerService.getOrSetCache(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          )
+            .andWhere('userId', params.userId)
+            .paginate(request.body().page, 30)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
-        await Pack.query().where('userId', params.userId).paginate(request.body().page, 30)
+        await ControllerService.includeRelations(
+          this.packIndexWithoutHiddenPacksQuery,
+          request.input('includes')
+        )
+          .where('userId', params.userId)
+          .paginate(request.body().page, 30)
     )
   }
 
@@ -112,6 +159,7 @@ export default class PacksController {
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(Pack))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -120,10 +168,14 @@ export default class PacksController {
 
     if (await bouncer.with(PackPolicy).denies('show', requestedPack))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await Pack.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          Pack.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

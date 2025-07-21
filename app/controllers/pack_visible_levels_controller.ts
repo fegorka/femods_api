@@ -1,40 +1,53 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import ControllerService from '#services/controller_service'
+
 import PackVisibleLevel from '#models/pack_visible_level'
 import PackVisibleLevelPolicy from '#policies/pack_visible_level_policy'
-import { requestParamsCuidValidator } from '#validators/request'
+import ControllerService from '#services/controller_service'
+
 import {
   storePackVisibleLevelValidator,
   updatePackVisibleLevelValidator,
 } from '#validators/pack_visible_level'
-import { ResponseCacheService } from "#services/response_cache_service";
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 
 export default class PackVisibleLevelsController {
   async index({ bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
+
     if (await bouncer.with(PackVisibleLevelPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackVisibleLevel.all()
+      async () =>
+        await ControllerService.includeRelations(
+          PackVisibleLevel.query(),
+          request.input('includes')
+        )
     )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     const requestedPackVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+
     if (requestedPackVisibleLevel === null || requestedPackVisibleLevel === undefined)
       return response.notFound()
 
     if (await bouncer.with(PackVisibleLevelPolicy).denies('show', requestedPackVisibleLevel))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackVisibleLevel.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          PackVisibleLevel.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

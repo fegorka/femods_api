@@ -1,55 +1,82 @@
 import type { HttpContext } from '@adonisjs/core/http'
+
 import PackRelease from '#models/pack_release'
 import PackReleasePolicy from '#policies/pack_release_policy'
-import { requestPageValidator, requestParamsCuidValidator } from '#validators/request'
+import User from '#models/user'
+import Pack from '#models/pack'
+import ControllerService from '#services/controller_service'
+
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+} from '#validators/request'
 import {
   indexByPackPackReleaseValidator,
   preCheckPackReleasePackIdValidator,
   storePackReleaseIdeValidator,
   updatePackReleaseIdValidator,
 } from '#validators/pack_release'
-import ControllerService from '#services/controller_service'
-import User from '#models/user'
-import Pack from '#models/pack'
-import { ResponseCacheService} from '#services/response_cache_service'
 
 export default class PackReleasesController {
   async index({ auth, bouncer, request }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(PackRelease))
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
         async () =>
-        await this.packReleaseIndexWithoutHiddenPacksQuery.paginate(
-          request.input('page'),
-          request.input('limit')
-        )
+          await ControllerService.includeRelations(
+            this.packReleaseIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
       )
-    return await PackRelease.query().paginate(request.input('page'), request.input('limit'))
+    return await ControllerService.getOrSetCache(request, 120, async () =>
+      ControllerService.includeRelations(PackRelease.query(), request.input('includes')).paginate(
+        request.input('page'),
+        request.input('limit')
+      )
+    )
   }
 
   async indexByPack({ auth, bouncer, request, params }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(indexByPackPackReleaseValidator)
+    await request.validateUsing(requestIncludeValidator(PackRelease))
 
     const pack = await Pack.findBy({ id: params.packId })
     const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
     const packUserId = pack && pack.userId !== undefined ? pack.userId : null
-    if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packId })
+
+    if (userId === packUserId)
+      return ControllerService.includeRelations(
+        PackRelease.query().where('packId', params.packId),
+        request.input('includes')
+      )
 
     if (await bouncer.with(PackReleasePolicy).denies('index'))
-      return await ResponseCacheService.getOrSet(request, 120, async () =>
-        await this.packReleaseIndexWithoutHiddenPacksQuery.andWhere('packId', params.packId)
+      return await ControllerService.getOrSetCache(
+        request,
+        120,
+        async () =>
+          await ControllerService.includeRelations(
+            this.packReleaseIndexWithoutHiddenPacksQuery,
+            request.input('includes')
+          ).andWhere('packId', params.packId)
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackRelease.findManyBy({ packId: params.packId })
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('packId', params.packId),
+          request.input('includes')
+        )
     )
   }
 
@@ -64,6 +91,7 @@ export default class PackReleasesController {
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackRelease))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -73,10 +101,14 @@ export default class PackReleasesController {
 
     if (await bouncer.with(PackReleasePolicy).denies('show', requestedPackRelease))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackRelease.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          PackRelease.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

@@ -1,5 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { requestParamsCuidValidator } from '#validators/request'
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
 import PackItemSafeStatusPolicy from '#policies/pack_item_safe_status_policy'
 import ControllerService from '#services/controller_service'
@@ -7,21 +7,27 @@ import {
   storePackItemSafeStatusValidator,
   updatePackItemSafeStatusValidator,
 } from '#validators/pack_item_safe_status'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class PackItemSafeStatusesController {
   async index({ bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(PackItemSafeStatus))
+
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackItemSafeStatus.all()
+      async () =>
+        await ControllerService.includeRelations(
+          PackItemSafeStatus.query(),
+          request.input('includes')
+        )
     )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(PackItemSafeStatus))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -31,10 +37,14 @@ export default class PackItemSafeStatusesController {
 
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('show', requestedPackItemSafeStatus))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await PackItemSafeStatus.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          PackItemSafeStatus.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

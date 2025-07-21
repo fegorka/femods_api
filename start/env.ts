@@ -69,12 +69,12 @@ const envSchemaDiscordRequired = {
 export type EnvKeysDiscordOptional = keyof typeof envSchemaDiscordOptional
 const envSchemaDiscordOptional = {}
 
-export type EnvKeysRequestCacheRequired = keyof typeof envSchemaRequestCacheRequired
-const envSchemaRequestCacheRequired = {}
+export type EnvKeysResponseCacheRequired = keyof typeof envSchemaResponseCacheRequired
+const envSchemaResponseCacheRequired = {}
 
-export type EnvKeysRequestCacheOptional = keyof typeof envSchemaRequestCacheOptional
-const envSchemaRequestCacheOptional = {
-  REQUEST_CACHE_DISABLE: Env.schema.boolean.optional(),
+export type EnvKeysResponseCacheOptional = keyof typeof envSchemaResponseCacheOptional
+const envSchemaResponseCacheOptional = {
+  RESPONSE_CACHE_DISABLE: Env.schema.boolean.optional(),
 }
 
 export type EnvKeysAllRequired = keyof typeof envSchemaAllRequired
@@ -84,7 +84,7 @@ const envSchemaAllRequired = {
   ...envSchemaRequestSignSecretRequired,
   ...envSchemaRedisRequired,
   ...envSchemaDiscordRequired,
-  ...envSchemaRequestCacheRequired,
+  ...envSchemaResponseCacheRequired,
 }
 
 export type EnvKeysAllOptional = keyof typeof envSchemaAllOptional
@@ -94,7 +94,7 @@ const envSchemaAllOptional = {
   ...envSchemaRequestSignSecretOptional,
   ...envSchemaRedisOptional,
   ...envSchemaDiscordOptional,
-  ...envSchemaRequestCacheOptional,
+  ...envSchemaResponseCacheOptional,
 }
 
 export default await Env.create(new URL('../', import.meta.url), {

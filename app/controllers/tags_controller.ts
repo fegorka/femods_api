@@ -1,22 +1,30 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { requestParamsCuidValidator } from '#validators/request'
-import TagPolicy from '#policies/tag_policy'
+
 import Tag from '#models/tag'
-import { storeTagValidator, updateTagValidator } from '#validators/tag'
+import TagPolicy from '#policies/tag_policy'
 import ControllerService from '#services/controller_service'
-import { ResponseCacheService } from '#services/response_cache_service'
+
+import { storeTagValidator, updateTagValidator } from '#validators/tag'
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 
 export default class TagsController {
   async index({ auth, bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(Tag))
+
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await Tag.all())
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () => await ControllerService.includeRelations(Tag.query(), request.input('includes'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(Tag))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -25,10 +33,14 @@ export default class TagsController {
 
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await Tag.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          Tag.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

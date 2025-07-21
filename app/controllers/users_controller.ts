@@ -1,33 +1,40 @@
 import type { HttpContext } from '@adonisjs/core/http'
+
 import User from '#models/user'
 import UserPolicy from '#policies/user_policy'
 import ControllerService from '#services/controller_service'
+
 import { updateUserValidator } from '#validators/user'
 import {
   requestPageValidator,
   requestParamsCuidValidator,
   requestSearchValidator,
+  requestIncludeValidator,
 } from '#validators/request'
-import { ResponseCacheService } from "#services/response_cache_service";
 
 export default class UsersController {
   async index({ bouncer, response, request }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
+    await request.validateUsing(requestIncludeValidator(User))
 
     if (await bouncer.with(UserPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
     if (!request.input('search'))
-      return await ResponseCacheService.getOrSet(
+      return await ControllerService.getOrSetCache(
         request,
         120,
-        async () => await User.query().paginate(request.input('page'), request.input('limit'))
+        async () =>
+          await ControllerService.includeRelations(
+            User.query(),
+            request.input('includes')
+          ).paginate(request.input('page'), request.input('limit'))
       )
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
       async () =>
-        await User.query()
+        await ControllerService.includeRelations(User.query(), request.input('includes'))
           .andWhereILike('name', `%${request.input('search')}%`)
           .orWhereILike('publicName', `%${request.input('search')}%`)
           .orWhereILike('id', request.input('search'))
@@ -38,6 +45,7 @@ export default class UsersController {
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(User))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -46,10 +54,14 @@ export default class UsersController {
 
     if (await bouncer.with(UserPolicy).denies('show', requestedUser))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(
+    return await ControllerService.getOrSetCache(
       request,
       120,
-      async () => await User.findBy({ id: params.id })
+      async () =>
+        await ControllerService.includeRelations(
+          User.query().where('id', params.id),
+          request.input('includes')
+        )
     )
   }
 

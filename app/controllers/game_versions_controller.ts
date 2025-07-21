@@ -1,20 +1,28 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import ControllerService from '#services/controller_service'
-import GameVersionPolicy from '#policies/game_version_policy'
+
 import GameVersion from '#models/game_version'
-import { requestParamsCuidValidator } from '#validators/request'
+import GameVersionPolicy from '#policies/game_version_policy'
+import ControllerService from '#services/controller_service'
+
+import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import { storeGameVersionValidator, updateGameVersionValidator } from '#validators/game_version'
-import { ResponseCacheService } from '#services/response_cache_service'
 
 export default class GameVersionsController {
   async index({ bouncer, response, request }: HttpContext) {
+    await request.validateUsing(requestIncludeValidator(GameVersion))
     if (await bouncer.with(GameVersionPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await GameVersion.all())
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(GameVersion.query(), request.input('includes'))
+    )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestIncludeValidator(GameVersion))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -24,7 +32,15 @@ export default class GameVersionsController {
 
     if (await bouncer.with(GameVersionPolicy).denies('show', requestedGameVersion))
       return response.forbidden('Insufficient permissions')
-    return await ResponseCacheService.getOrSet(request, 120, async () => await GameVersion.findBy({ id: params.id }))
+    return await ControllerService.getOrSetCache(
+      request,
+      120,
+      async () =>
+        await ControllerService.includeRelations(
+          GameVersion.query().where('id', params.id),
+          request.input('includes')
+        )
+    )
   }
 
   async store({ bouncer, response, request }: HttpContext) {
