@@ -1,8 +1,8 @@
 import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
+import { ExtendedBaseModel } from '#models/extended_base_model'
 import {
   afterCreate,
-  BaseModel,
   beforeCreate,
   beforeSave,
   belongsTo,
@@ -16,6 +16,7 @@ import Pack from '#models/pack'
 import Role from '#models/role'
 import UserStatus from '#models/user_status'
 import hash from '@adonisjs/core/services/hash'
+import { sortable } from '#decorators/sortable'
 
 //import { compose } from '@adonisjs/core/helpers'
 //import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -26,7 +27,7 @@ import hash from '@adonisjs/core/services/hash'
 //})
 //export default class User extends compose(BaseModel, AuthFinder) {
 
-export default class User extends BaseModel {
+export default class User extends ExtendedBaseModel {
   static allowedUserStatusToIndex = ['default']
   static allowedUserStatusToShow = ['default']
 
@@ -45,6 +46,7 @@ export default class User extends BaseModel {
   declare name: string | null
 
   @column()
+  @sortable()
   declare publicName: string | null
 
   @column({ serializeAs: null })
@@ -60,9 +62,11 @@ export default class User extends BaseModel {
   declare userStatusId: string
 
   @column.dateTime({ autoCreate: true })
+  @sortable()
   declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @sortable()
   declare updatedAt: DateTime | null
 
   @belongsTo(() => UserStatus)

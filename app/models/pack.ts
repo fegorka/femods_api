@@ -1,14 +1,9 @@
 import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import {
-  BaseModel,
-  beforeCreate,
-  belongsTo,
-  column,
-  hasMany,
-  manyToMany,
-} from '@adonisjs/lucid/orm'
+import { ExtendedBaseModel } from '#models/extended_base_model'
+import { beforeCreate, belongsTo, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
 import { cuid } from '@adonisjs/core/helpers'
+import { sortable } from '#decorators/sortable'
 import PackVisibleLevel from '#models/pack_visible_level'
 import PackModCore from '#models/pack_mod_core'
 import User from '#models/user'
@@ -16,7 +11,7 @@ import PackRelease from '#models/pack_release'
 import Tag from '#models/tag'
 import PackStatus from '#models/pack_status'
 
-export default class Pack extends BaseModel {
+export default class Pack extends ExtendedBaseModel {
   static allowedPackStatusToIndex = ['default']
   static allowedPackStatusToShow = ['default']
 
@@ -35,12 +30,15 @@ export default class Pack extends BaseModel {
   declare publicName: string | null
 
   @column()
+  @sortable()
   declare minVersion: string | null
 
   @column()
+  @sortable()
   declare maxVersion: string | null
 
   @column()
+  @sortable()
   declare totalDownloadCount: bigint
 
   @column()
@@ -56,9 +54,11 @@ export default class Pack extends BaseModel {
   declare userId: string
 
   @column.dateTime({ autoCreate: true })
+  @sortable()
   declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @sortable()
   declare updatedAt: DateTime
 
   @belongsTo(() => PackVisibleLevel)

@@ -1,15 +1,18 @@
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
 import { cuid } from '@adonisjs/core/helpers'
-import { BaseModel, beforeCreate, column, manyToMany } from '@adonisjs/lucid/orm'
+import { ExtendedBaseModel } from '#models/extended_base_model'
+import { beforeCreate, column, manyToMany } from '@adonisjs/lucid/orm'
 import User from '#models/user'
+import { sortable } from '#decorators/sortable'
 
-export default class Role extends BaseModel {
+export default class Role extends ExtendedBaseModel {
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
   declare id: string
 
   @column()
+  @sortable()
   declare name: string
 
   @manyToMany(() => User)
