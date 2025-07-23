@@ -3,52 +3,53 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackVisibleLevel from '#models/pack_visible_level'
 import PackVisibleLevelPolicy from '#policies/pack_visible_level_policy'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
 
 import {
   storePackVisibleLevelValidator,
   updatePackVisibleLevelValidator,
 } from '#validators/pack_visible_level'
-import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+  requestSortValidator,
+} from '#validators/request'
 
 export default class PackVisibleLevelsController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, request, response }: HttpContext) {
+    await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
+    await request.validateUsing(requestSortValidator(PackVisibleLevel))
 
     if (await bouncer.with(PackVisibleLevelPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackVisibleLevel.query(),
-          request.input('includes')
-        )
+
+    const pipeline = new QueryPipelineService(PackVisibleLevel.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
-
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const requestedPackVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    const packVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    if (!packVisibleLevel) return response.notFound()
 
-    if (requestedPackVisibleLevel === null || requestedPackVisibleLevel === undefined)
-      return response.notFound()
-
-    if (await bouncer.with(PackVisibleLevelPolicy).denies('show', requestedPackVisibleLevel))
+    if (await bouncer.with(PackVisibleLevelPolicy).denies('show', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackVisibleLevel.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+
+    const pipeline = new QueryPipelineService(
+      PackVisibleLevel.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -62,28 +63,27 @@ export default class PackVisibleLevelsController {
   async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
-    if (requestedPackVisibleLevel === null || requestedPackVisibleLevel === undefined)
-      return response.notFound()
+    const packVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    if (!packVisibleLevel) return response.notFound()
 
-    if (await bouncer.with(PackVisibleLevelPolicy).denies('update', requestedPackVisibleLevel))
+    if (await bouncer.with(PackVisibleLevelPolicy).denies('update', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(
-      updatePackVisibleLevelValidator(requestedPackVisibleLevel.id)
+      updatePackVisibleLevelValidator(packVisibleLevel.id)
     )
-    await PackVisibleLevel.updateOrCreate({ id: requestedPackVisibleLevel.id }, payload)
+    await PackVisibleLevel.updateOrCreate({ id: packVisibleLevel.id }, payload)
   }
 
   async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
-    if (requestedPackVisibleLevel === null || requestedPackVisibleLevel === undefined)
-      return response.notFound()
+    const packVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    if (!packVisibleLevel) return response.notFound()
 
-    if (await bouncer.with(PackVisibleLevelPolicy).denies('destroy', requestedPackVisibleLevel))
+    if (await bouncer.with(PackVisibleLevelPolicy).denies('destroy', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
-    return await requestedPackVisibleLevel.delete()
+
+    return packVisibleLevel.delete()
   }
 }

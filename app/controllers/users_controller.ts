@@ -3,6 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import UserPolicy from '#policies/user_policy'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
 
 import { updateUserValidator } from '#validators/user'
 import {
@@ -10,6 +11,7 @@ import {
   requestParamsCuidValidator,
   requestSearchValidator,
   requestIncludeValidator,
+  requestSortValidator,
 } from '#validators/request'
 
 export default class UsersController {
@@ -17,75 +19,73 @@ export default class UsersController {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
     await request.validateUsing(requestIncludeValidator(User))
+    await request.validateUsing(requestSortValidator(User))
 
     if (await bouncer.with(UserPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    if (!request.input('search'))
-      return await ControllerService.getOrSetCache(
-        request,
-        120,
-        async () =>
-          await ControllerService.includeRelations(
-            User.query(),
-            request.input('includes')
-          ).paginate(request.input('page'), request.input('limit'))
+
+    const search = request.input('search', '')
+
+    const pipeline = new QueryPipelineService(User.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+      .transform((q) =>
+        search
+          ? q.where((sub) =>
+              sub
+                .whereILike('name', `%${search}%`)
+                .orWhereILike('publicName', `%${search}%`)
+                .orWhereILike('id', search)
+                .orWhereILike('publicId', search)
+            )
+          : q
       )
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(User.query(), request.input('includes'))
-          .andWhereILike('name', `%${request.input('search')}%`)
-          .orWhereILike('publicName', `%${request.input('search')}%`)
-          .orWhereILike('id', request.input('search'))
-          .orWhereILike('publicId', request.input('search'))
-          .paginate(request.input('page'), request.input('limit'))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
   async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(User))
-
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const requestedUser = await User.findBy({ id: params.id })
-    if (requestedUser === null || requestedUser === undefined) return response.notFound()
+    const user = await User.findBy({ id: params.id })
+    if (!user) return response.notFound()
 
-    if (await bouncer.with(UserPolicy).denies('show', requestedUser))
+    if (await bouncer.with(UserPolicy).denies('show', user))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          User.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+
+    const pipeline = new QueryPipelineService(
+      User.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
   async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedUser = await User.findBy({ id: params.id })
-    if (requestedUser === null || requestedUser === undefined) return response.notFound()
+    const user = await User.findBy({ id: params.id })
+    if (!user) return response.notFound()
 
-    if (await bouncer.with(UserPolicy).denies('update', requestedUser))
+    if (await bouncer.with(UserPolicy).denies('update', user))
       return response.forbidden('Insufficient permissions')
 
-    const payload = await request.validateUsing(updateUserValidator(requestedUser.id))
-    await User.updateOrCreate({ id: requestedUser.id }, payload)
+    const payload = await request.validateUsing(updateUserValidator(user.id))
+    await User.updateOrCreate({ id: user.id }, payload)
   }
 
   async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedUser = await User.findBy({ id: params.id })
-    if (requestedUser === null || requestedUser === undefined) return response.notFound()
+    const user = await User.findBy({ id: params.id })
+    if (!user) return response.notFound()
 
-    if (await bouncer.with(UserPolicy).denies('destroy', requestedUser))
+    if (await bouncer.with(UserPolicy).denies('destroy', user))
       return response.forbidden('Insufficient permissions')
-    return await requestedUser.delete()
+
+    return user.delete()
   }
 }

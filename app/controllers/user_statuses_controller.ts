@@ -1,53 +1,59 @@
 import type { HttpContext } from '@adonisjs/core/http'
-
 import UserStatus from '#models/user_status'
 import UserStatusPolicy from '#policies/user_status_policy'
 import ControllerService from '#services/controller_service'
-
-import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
+import { QueryPipelineService } from '#services/query_pipeline_service'
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+  requestSortValidator,
+} from '#validators/request'
 import { storeUserStatusValidator, updateUserStatusValidator } from '#validators/user_status'
 
 export default class UserStatusesController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, request, response }: HttpContext) {
+    await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(UserStatus))
+    await request.validateUsing(requestSortValidator(UserStatus))
 
-    if (await bouncer.with(UserStatusPolicy).denies('index'))
+    if (await bouncer.with(UserStatusPolicy).denies('index')) {
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(UserStatus.query(), request.input('includes'))
+    }
+
+    const pipeline = new QueryPipelineService(UserStatus.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(UserStatus))
-
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const requestedUserStatus = await UserStatus.findBy({ id: params.id })
-    if (requestedUserStatus === null || requestedUserStatus === undefined)
+    const status = await UserStatus.findBy({ id: params.id })
+    if (!status) {
       return response.notFound()
-
-    if (await bouncer.with(UserStatusPolicy).denies('show', requestedUserStatus))
+    }
+    if (await bouncer.with(UserStatusPolicy).denies('show', status)) {
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          UserStatus.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+    }
+
+    const pipeline = new QueryPipelineService(
+      UserStatus.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
   async store({ bouncer, response, request }: HttpContext) {
-    if (await bouncer.with(UserStatusPolicy).denies('store'))
+    if (await bouncer.with(UserStatusPolicy).denies('store')) {
       return response.forbidden('Insufficient permissions')
-
+    }
     const payload = await request.validateUsing(storeUserStatusValidator)
     await UserStatus.create(payload)
   }
@@ -55,26 +61,28 @@ export default class UserStatusesController {
   async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedUserStatus = await UserStatus.findBy({ id: params.id })
-    if (requestedUserStatus === null || requestedUserStatus === undefined)
+    const status = await UserStatus.findBy({ id: params.id })
+    if (!status) {
       return response.notFound()
-
-    if (await bouncer.with(UserStatusPolicy).denies('update', requestedUserStatus))
+    }
+    if (await bouncer.with(UserStatusPolicy).denies('update', status)) {
       return response.forbidden('Insufficient permissions')
+    }
 
-    const payload = await request.validateUsing(updateUserStatusValidator(requestedUserStatus.id))
-    await UserStatus.updateOrCreate({ id: requestedUserStatus.id }, payload)
+    const payload = await request.validateUsing(updateUserStatusValidator(status.id))
+    await UserStatus.updateOrCreate({ id: status.id }, payload)
   }
 
   async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedUserStatus = await UserStatus.findBy({ id: params.id })
-    if (requestedUserStatus === null || requestedUserStatus === undefined)
+    const status = await UserStatus.findBy({ id: params.id })
+    if (!status) {
       return response.notFound()
-
-    if (await bouncer.with(UserStatusPolicy).denies('destroy', requestedUserStatus))
+    }
+    if (await bouncer.with(UserStatusPolicy).denies('destroy', status)) {
       return response.forbidden('Insufficient permissions')
-    return await requestedUserStatus.delete()
+    }
+    return status.delete()
   }
 }

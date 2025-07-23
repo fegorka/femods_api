@@ -1,86 +1,92 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
 import PackItemSafeStatusPolicy from '#policies/pack_item_safe_status_policy'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
+import {
+  requestIncludeValidator,
+  requestParamsCuidValidator,
+  requestPageValidator,
+  requestSortValidator,
+} from '#validators/request'
 import {
   storePackItemSafeStatusValidator,
   updatePackItemSafeStatusValidator,
 } from '#validators/pack_item_safe_status'
 
 export default class PackItemSafeStatusesController {
-  async index({ bouncer, response, request }: HttpContext) {
+  public async index({ bouncer, request, response }: HttpContext) {
+    await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackItemSafeStatus))
+    await request.validateUsing(requestSortValidator(PackItemSafeStatus))
 
-    if (await bouncer.with(PackItemSafeStatusPolicy).denies('index'))
+    if (await bouncer.with(PackItemSafeStatusPolicy).denies('index')) {
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackItemSafeStatus.query(),
-          request.input('includes')
-        )
+    }
+
+    const pipeline = new QueryPipelineService(PackItemSafeStatus.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  public async show({ auth, bouncer, request, response, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackItemSafeStatus))
-
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const requestedPackItemSafeStatus = await PackItemSafeStatus.findBy({ id: params.id })
-    if (requestedPackItemSafeStatus === null || requestedPackItemSafeStatus === undefined)
-      return response.notFound()
+    const entity = await PackItemSafeStatus.findBy({ id: params.id })
+    if (!entity) return response.notFound()
 
-    if (await bouncer.with(PackItemSafeStatusPolicy).denies('show', requestedPackItemSafeStatus))
+    if (await bouncer.with(PackItemSafeStatusPolicy).denies('show', entity)) {
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackItemSafeStatus.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+    }
+
+    const pipeline = new QueryPipelineService(
+      PackItemSafeStatus.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async store({ bouncer, response, request }: HttpContext) {
-    if (await bouncer.with(PackItemSafeStatusPolicy).denies('store'))
+  public async store({ bouncer, response, request }: HttpContext) {
+    if (await bouncer.with(PackItemSafeStatusPolicy).denies('store')) {
       return response.forbidden('Insufficient permissions')
+    }
 
     const payload = await request.validateUsing(storePackItemSafeStatusValidator)
     await PackItemSafeStatus.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
+  public async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackItemSafeStatus = await PackItemSafeStatus.findBy({ id: params.id })
-    if (requestedPackItemSafeStatus === null || requestedPackItemSafeStatus === undefined)
-      return response.notFound()
+    const entity = await PackItemSafeStatus.findBy({ id: params.id })
+    if (!entity) return response.notFound()
 
-    if (await bouncer.with(PackItemSafeStatusPolicy).denies('update', requestedPackItemSafeStatus))
+    if (await bouncer.with(PackItemSafeStatusPolicy).denies('update', entity)) {
       return response.forbidden('Insufficient permissions')
+    }
 
     const payload = await request.validateUsing(
-      updatePackItemSafeStatusValidator(requestedPackItemSafeStatus.id)
+      updatePackItemSafeStatusValidator(entity.id)
     )
-    await PackItemSafeStatus.updateOrCreate({ id: requestedPackItemSafeStatus.id }, payload)
+    await PackItemSafeStatus.updateOrCreate({ id: entity.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
+  public async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackItemSafeStatus = await PackItemSafeStatus.findBy({ id: params.id })
-    if (requestedPackItemSafeStatus === null || requestedPackItemSafeStatus === undefined)
-      return response.notFound()
+    const entity = await PackItemSafeStatus.findBy({ id: params.id })
+    if (!entity) return response.notFound()
 
-    if (await bouncer.with(PackItemSafeStatusPolicy).denies('destroy', requestedPackItemSafeStatus))
+    if (await bouncer.with(PackItemSafeStatusPolicy).denies('destroy', entity)) {
       return response.forbidden('Insufficient permissions')
-    return await requestedPackItemSafeStatus.delete()
+    }
+
+    return await entity.delete()
   }
 }
