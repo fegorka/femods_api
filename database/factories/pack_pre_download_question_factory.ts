@@ -9,7 +9,7 @@ export const PackPreDownloadQuestionFactory = factory
     return {
       name: `${faker.lorem.words({ min: 1, max: 2 })}`,
       description: `${faker.lorem.words({ min: 2, max: 5 })}`,
-      packReleaseId: packReleases[randomInt(packReleases.length - 1)].id,
+      packReleaseId: packReleases[Math.max(randomInt(packReleases.length - 1), 0)].id,
     }
   })
   .build()

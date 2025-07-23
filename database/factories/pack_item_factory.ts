@@ -19,8 +19,8 @@ export const PackItemFactory = factory
           ''
         ),
 
-      packItemTypeId: packItemTypes[randomInt(packItemTypes.length - 1)].id,
-      packReleaseId: packReleases[randomInt(packReleases.length - 1)].id,
+      packItemTypeId: packItemTypes[Math.max(randomInt(packItemTypes.length - 1), 0)].id,
+      packReleaseId: packReleases[Math.max(randomInt(packReleases.length - 1), 0)].id,
     }
   })
   .relation('packPreDownloadQuestions', () => PackPreDownloadQuestionFactory)
