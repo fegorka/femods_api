@@ -32,7 +32,15 @@ const envSchemaRequestSignSecretRequired = {
 
 export type EnvKeysRequestSignSecretOptional = keyof typeof envSchemaRequestSignSecretOptional
 const envSchemaRequestSignSecretOptional = {
-  REQUEST_SIGN_DISABLE_ON_DEVELOPMENT: Env.schema.boolean.optional(),
+  REQUEST_SIGN_VERIFY_DISABLE_ON_DEVELOPMENT: Env.schema.boolean.optional(),
+}
+
+export type EnvKeysAuthRequired = keyof typeof envSchemaAuthRequired
+const envSchemaAuthRequired = {}
+
+export type EnvKeysAuthOptional = keyof typeof envSchemaAuthOptional
+const envSchemaAuthOptional = {
+  AUTH_VERIFY_DISABLE_ON_DEVELOPMENT: Env.schema.boolean.optional(),
 }
 
 export type EnvKeysDatabaseRequired = keyof typeof envSchemaDatabaseRequired
@@ -82,6 +90,7 @@ const envSchemaAllRequired = {
   ...envSchemaAppRequired,
   ...envSchemaDatabaseRequired,
   ...envSchemaRequestSignSecretRequired,
+  ...envSchemaAuthRequired,
   ...envSchemaRedisRequired,
   ...envSchemaDiscordRequired,
   ...envSchemaResponseCacheRequired,
@@ -92,6 +101,7 @@ const envSchemaAllOptional = {
   ...envSchemaAppOptional,
   ...envSchemaDatabaseOptional,
   ...envSchemaRequestSignSecretOptional,
+  ...envSchemaAuthOptional,
   ...envSchemaRedisOptional,
   ...envSchemaDiscordOptional,
   ...envSchemaResponseCacheOptional,

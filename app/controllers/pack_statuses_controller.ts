@@ -3,45 +3,54 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackStatus from '#models/pack_status'
 import PackStatusPolicy from '#policies/pack_status_policy'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
 
-import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
-import { storePackStatusValidator, updatePackStatusValidator } from '#validators/pack_status'
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+  requestSortValidator,
+} from '#validators/request'
+import {
+  storePackStatusValidator,
+  updatePackStatusValidator,
+} from '#validators/pack_status'
 
 export default class PackStatusesController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, request, response }: HttpContext) {
+    await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackStatus))
+    await request.validateUsing(requestSortValidator(PackStatus))
 
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(PackStatus.query(), request.input('includes'))
+
+    const pipeline = new QueryPipelineService(PackStatus.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackStatus))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     const requestedPackStatus = await PackStatus.findBy({ id: params.id })
-    if (requestedPackStatus === null || requestedPackStatus === undefined)
-      return response.notFound()
+    if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('show', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackStatus.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+
+    const pipeline = new QueryPipelineService(
+      PackStatus.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -56,8 +65,7 @@ export default class PackStatusesController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedPackStatus = await PackStatus.findBy({ id: params.id })
-    if (requestedPackStatus === null || requestedPackStatus === undefined)
-      return response.notFound()
+    if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('update', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
@@ -70,11 +78,11 @@ export default class PackStatusesController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedPackStatus = await PackStatus.findBy({ id: params.id })
-    if (requestedPackStatus === null || requestedPackStatus === undefined)
-      return response.notFound()
+    if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('destroy', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
-    return await requestedPackStatus.delete()
+
+    return requestedPackStatus.delete()
   }
 }

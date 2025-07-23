@@ -3,45 +3,56 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Tag from '#models/tag'
 import TagPolicy from '#policies/tag_policy'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
 
-import { storeTagValidator, updateTagValidator } from '#validators/tag'
-import { requestIncludeValidator, requestParamsCuidValidator } from '#validators/request'
+import {
+  storeTagValidator,
+  updateTagValidator,
+} from '#validators/tag'
+
+import {
+  requestIncludeValidator,
+  requestPageValidator,
+  requestParamsCuidValidator,
+  requestSortValidator,
+} from '#validators/request'
 
 export default class TagsController {
-  async index({ auth, bouncer, response, request }: HttpContext) {
-    await request.validateUsing(requestIncludeValidator(Tag))
-
+  async index({ auth, bouncer, request, response }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
+
+    await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(Tag))
+    await request.validateUsing(requestSortValidator(Tag))
 
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () => await ControllerService.includeRelations(Tag.query(), request.input('includes'))
+
+    const pipeline = new QueryPipelineService(Tag.query())
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
+
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(Tag))
 
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
-
     const requestedTag = await Tag.findBy({ id: params.id })
-    if (requestedTag === null || requestedTag === undefined) return response.notFound()
+    if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          Tag.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+
+    const pipeline = new QueryPipelineService(Tag.query().where('id', params.id))
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -56,7 +67,7 @@ export default class TagsController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedTag = await Tag.findBy({ id: params.id })
-    if (requestedTag === null || requestedTag === undefined) return response.notFound()
+    if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('update', requestedTag))
       return response.forbidden('Insufficient permissions')
@@ -69,10 +80,11 @@ export default class TagsController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedTag = await Tag.findBy({ id: params.id })
-    if (requestedTag === null || requestedTag === undefined) return response.notFound()
+    if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('destroy', requestedTag))
       return response.forbidden('Insufficient permissions')
-    return await requestedTag.delete()
+
+    return requestedTag.delete()
   }
 }

@@ -13,9 +13,9 @@ export const PackFactory = factory
     const packModCores = await PackModCore.all()
     return {
       publicName: cuid(), // .word() no unique, uses .cuid()
-
-      packVisibleLevelId: packVisibleLevels[randomInt(packVisibleLevels.length - 1)].id,
-      packModCoreId: packModCores[randomInt(packVisibleLevels.length - 1)].id,
+      totalDownloadCount: BigInt(randomInt(999_999_999_999)),
+      packVisibleLevelId: packVisibleLevels[Math.max(randomInt(packVisibleLevels.length - 1), 0)].id,
+      packModCoreId: packModCores[Math.max(randomInt(packVisibleLevels.length - 1), 0)].id,
     }
   })
   .state('withoutPublicName', (instance) => (instance.publicName = null))

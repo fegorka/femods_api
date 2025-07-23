@@ -1,25 +1,29 @@
 import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
+import { ExtendedBaseModel } from '#models/extended_base_model'
+import { beforeCreate, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
 import { cuid } from '@adonisjs/core/helpers'
 import PackItemType from '#models/pack_item_type'
 import PackRelease from '#models/pack_release'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
+import { sortable } from '#decorators/sortable'
 
-export default class PackItem extends BaseModel {
+export default class PackItem extends ExtendedBaseModel {
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
   declare id: string
 
   @column()
+  @sortable()
   declare name: string
 
   @column()
   declare metaName: string
 
   @column()
+  @sortable()
   declare downloadUrl: string
 
   @column()

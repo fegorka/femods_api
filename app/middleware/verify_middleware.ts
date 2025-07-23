@@ -14,7 +14,7 @@ export default class VerifyMiddleware {
     options: { secret: EnvKeysRequestSignSecretRequired } = { secret: 'REQUEST_SIGN_SECRET_SELF' }
   ) {
     if (
-      env.get('REQUEST_SIGN_DISABLE_ON_DEVELOPMENT', false) &&
+      env.get('REQUEST_SIGN_VERIFY_DISABLE_ON_DEVELOPMENT', false) &&
       env.get('NODE_ENV') === 'development'
     )
       return await next()

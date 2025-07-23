@@ -1,14 +1,15 @@
 import type { HttpContext } from '@adonisjs/core/http'
-
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
 import PackRelease from '#models/pack_release'
 import ControllerService from '#services/controller_service'
+import { QueryPipelineService } from '#services/query_pipeline_service'
 
 import {
   requestIncludeValidator,
   requestPageValidator,
   requestParamsCuidValidator,
+  requestSortValidator,
 } from '#validators/request'
 import {
   indexByPackReleasePackPreDownloadQuestionValidator,
@@ -20,72 +21,67 @@ import Pack from '#models/pack'
 import User from '#models/user'
 
 export default class PackPreDownloadQuestionsController {
-  async index({ auth, bouncer, request }: HttpContext) {
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
+  private baseVisibilityQuery = () =>
+    PackPreDownloadQuestion.query().whereHas('packRelease', (packReleaseQuery) => {
+      packReleaseQuery.whereHas('pack', (packQuery) => {
+        packQuery
+          .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
+          .andWhereHas('packVisibleLevel', (q) => q.whereIn('name', Pack.allowedPackVisibleLevelToIndex))
+          .andWhereHas('user', (q) => q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex)))
+      })
+    })
 
+  public async index({ auth, bouncer, request }: HttpContext) {
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
+    await request.validateUsing(requestSortValidator(PackPreDownloadQuestion))
 
-    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ControllerService.getOrSetCache(
-        request,
-        120,
-        async () =>
-          await ControllerService.includeRelations(
-            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
-            request.input('includes')
-          ).paginate(request.input('page'), request.input('limit'))
-      )
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackPreDownloadQuestion.query(),
-          request.input('includes')
-        ).paginate(request.input('page'), request.input('limit'))
+    const initial = (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
+      ? this.baseVisibilityQuery()
+      : PackPreDownloadQuestion.query()
+
+    const pipeline = new QueryPipelineService(initial)
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
+  public async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
-
     await request.validateUsing(indexByPackReleasePackPreDownloadQuestionValidator)
+    await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
+    await request.validateUsing(requestSortValidator(PackPreDownloadQuestion))
 
     const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
-    const packReleasePackId =
-      packRelease && packRelease.packId !== undefined ? packRelease.packId : null
-    const pack = await Pack.findBy({ id: packReleasePackId })
-    const userId = auth.user && auth.user.id !== undefined ? auth.user.id : null
-    const packUserId = pack && pack.userId !== undefined ? pack.userId : null
+    const pack = packRelease?.packId ? await Pack.findBy({ id: packRelease.packId }) : null
 
-    if (userId === packUserId) return PackRelease.findManyBy({ packId: params.packReleaseId })
+    if (auth.user?.id === pack?.userId) {
+      return PackPreDownloadQuestion.findManyBy({ packReleaseId: params.packReleaseId })
+    }
 
-    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
-      return await ControllerService.getOrSetCache(
-        request,
-        120,
-        async () =>
-          await ControllerService.includeRelations(
-            this.packPreDownloadQuestionIndexWithoutHiddenPacksQuery,
-            request.input('includes')
-          ).andWhere('packReleaseId', params.packReleaseId)
-      )
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackRelease.query().where('packReleaseId', params.packReleaseId),
-          request.input('includes')
-        )
+    const initial = (await bouncer.with(PackPreDownloadQuestionPolicy).denies('index'))
+      ? this.baseVisibilityQuery()
+      : PackPreDownloadQuestion.query()
+
+    const pipeline = new QueryPipelineService(initial)
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
+      .transform((q) => q.where('packReleaseId', params.packReleaseId))
+
+    return pipeline.executeWithCache(request, 120, (q) =>
+      q.paginate(request.input('page'), request.input('limit'))
     )
   }
 
-  async store({ bouncer, response, request }: HttpContext) {
-    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('store'))
+  public async store({ bouncer, response, request }: HttpContext) {
+    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('store')) {
       return response.forbidden('Insufficient permissions')
+    }
 
     await request.validateUsing(preCheckPackPreDownloadQuestionReleaseIdValidator)
     const payload = await request.validateUsing(
@@ -94,91 +90,52 @@ export default class PackPreDownloadQuestionsController {
     await PackPreDownloadQuestion.create(payload)
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  public async show({ auth, bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
-
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const requestedPackPreDownloadQuestion = await PackPreDownloadQuestion.findBy({ id: params.id })
-    if (requestedPackPreDownloadQuestion === null || requestedPackPreDownloadQuestion === undefined)
-      return response.notFound()
-
-    if (
-      await bouncer
-        .with(PackPreDownloadQuestionPolicy)
-        .denies('show', requestedPackPreDownloadQuestion)
-    )
+    const question = await PackPreDownloadQuestion.findBy({ id: params.id })
+    if (!question) return response.notFound()
+    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('show', question)) {
       return response.forbidden('Insufficient permissions')
-    return await ControllerService.getOrSetCache(
-      request,
-      120,
-      async () =>
-        await ControllerService.includeRelations(
-          PackPreDownloadQuestion.query().where('id', params.id),
-          request.input('includes')
-        )
-    )
+    }
+
+    const pipeline = new QueryPipelineService(
+      PackPreDownloadQuestion.query().where('id', params.id)
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
+  public async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackPreDownloadQuestion = await PackPreDownloadQuestion.findBy({ id: params.id })
-    if (requestedPackPreDownloadQuestion === null || requestedPackPreDownloadQuestion === undefined)
-      return response.notFound()
-
-    if (
-      await bouncer
-        .with(PackPreDownloadQuestionPolicy)
-        .denies('update', requestedPackPreDownloadQuestion)
-    )
+    const question = await PackPreDownloadQuestion.findBy({ id: params.id })
+    if (!question) return response.notFound()
+    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('update', question)) {
       return response.forbidden('Insufficient permissions')
+    }
 
     await request.validateUsing(preCheckPackPreDownloadQuestionReleaseIdValidator)
     const payload = await request.validateUsing(
       updatePackPreDownloadQuestionValidator(
         request.body().packReleaseId,
-        requestedPackPreDownloadQuestion.id
+        question.id
       )
     )
-    await PackPreDownloadQuestion.updateOrCreate(
-      { id: requestedPackPreDownloadQuestion.id },
-      payload
-    )
+    await PackPreDownloadQuestion.updateOrCreate({ id: question.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
+  public async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
-    const requestedPackPreDownloadQuestion = await PackPreDownloadQuestion.findBy({ id: params.id })
-    if (requestedPackPreDownloadQuestion === null || requestedPackPreDownloadQuestion === undefined)
-      return response.notFound()
-
-    if (
-      await bouncer
-        .with(PackPreDownloadQuestionPolicy)
-        .denies('destroy', requestedPackPreDownloadQuestion)
-    )
+    const question = await PackPreDownloadQuestion.findBy({ id: params.id })
+    if (!question) return response.notFound()
+    if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('destroy', question)) {
       return response.forbidden('Insufficient permissions')
-    return await requestedPackPreDownloadQuestion.delete()
-  }
+    }
 
-  private packPreDownloadQuestionIndexWithoutHiddenPacksQuery =
-    PackPreDownloadQuestion.query().whereHas('packRelease', (packReleaseQuery) => {
-      packReleaseQuery.whereHas('pack', (packQuery) => {
-        packQuery
-          .whereHas('packStatus', (packStatusQuery) => {
-            packStatusQuery.whereIn('name', Pack.allowedPackStatusToIndex)
-          })
-          .andWhereHas('packVisibleLevel', (packVisibleLevelQuery) => {
-            packVisibleLevelQuery.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
-          })
-          .andWhereHas('user', (userQuery) => {
-            userQuery.whereHas('userStatus', (userStatusQuery) => {
-              userStatusQuery.whereIn('name', User.allowedUserStatusToIndex)
-            })
-          })
-      })
-    })
+    return question.delete()
+  }
 }

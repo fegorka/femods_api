@@ -1,15 +1,18 @@
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
-import { BaseModel, beforeCreate, column, manyToMany } from '@adonisjs/lucid/orm'
+import { ExtendedBaseModel } from '#models/extended_base_model'
+import { beforeCreate, column, manyToMany } from '@adonisjs/lucid/orm'
 import { cuid } from '@adonisjs/core/helpers'
 import Pack from '#models/pack'
+import { sortable } from '#decorators/sortable'
 
-export default class Tag extends BaseModel {
+export default class Tag extends ExtendedBaseModel {
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
   declare id: string
 
   @column()
+  @sortable()
   declare name: string
 
   @manyToMany(() => Pack)

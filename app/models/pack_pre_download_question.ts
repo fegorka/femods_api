@@ -1,16 +1,19 @@
 import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
-import { BaseModel, beforeCreate, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
+import { ExtendedBaseModel } from '#models/extended_base_model'
+import { beforeCreate, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
 import { cuid } from '@adonisjs/core/helpers'
 import PackRelease from '#models/pack_release'
 import PackItem from '#models/pack_item'
+import { sortable } from '#decorators/sortable'
 
-export default class PackPreDownloadQuestion extends BaseModel {
+export default class PackPreDownloadQuestion extends ExtendedBaseModel {
   static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
   declare id: string
 
   @column()
+  @sortable()
   declare name: string
 
   @column()
