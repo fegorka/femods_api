@@ -22,7 +22,12 @@ export const requestPageValidator = vine.compile(
 
 export const requestSearchValidator = vine.compile(
   vine.object({
-    search: vine.string().trim().toLowerCase().minLength(2).maxLength(64).optional(),
+    search: vine
+      .array(vine.string().trim().toLowerCase().minLength(1).maxLength(64))
+      .compact()
+      .notEmpty()
+      .maxLength(8)
+      .optional(),
   })
 )
 
