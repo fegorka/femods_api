@@ -15,6 +15,11 @@ export default class ControllerService {
     if (request.header('Authorization') !== undefined) await auth.authenticate()
   }
 
+  /**
+   * @arg query Model.query()
+   * @arg sort Сolumn & prefix '>' for descending
+   * @description Applies sorting to query
+   */
   static applySorting(query: ModelQueryBuilderContract<any>, sort: string | undefined) {
     console.log('0')
     console.log({ sort_name: sort })
@@ -29,6 +34,13 @@ export default class ControllerService {
     return query.orderBy(column, direction)
   }
 
+  /**
+   * @arg query Model.query()
+   * @arg searchTokens Search tokens to filter by
+   * @arg callback Callback to apply conditions for each token
+   * @arg whereWrapper Wrap each token in separate where group
+   * @description Applies multiple search tokens to query using provided callback and grouping logic
+   */
   static applySearchTokens<Model extends LucidModel>(
     query: ModelQueryBuilderContract<Model>,
     searchTokens: string[],
@@ -44,7 +56,7 @@ export default class ControllerService {
   }
 
   /**
-   * @arg includes Model relation names
+   * @arg includes Model.query()
    * @arg queryToModify Model.query()
    * @description Used to add data of related models to query
    */
@@ -61,6 +73,12 @@ export default class ControllerService {
     return query
   }
 
+  /**
+   * @arg request Request
+   * @arg ttlSeconds Cache lifetime in seconds
+   * @arg callback Will be executed if cache is missing
+   * @description Return cached response or exec callback & caches its result
+   */
   static async getOrSetCache<T>(
     request: Request,
     ttlSeconds: number,
