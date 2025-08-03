@@ -20,7 +20,7 @@ export default class ControllerService {
     console.log({ sort_name: sort })
     if (!sort) return query
 
-    const direction = sort.startsWith('<') ? 'desc' : 'asc'
+    const direction = sort.startsWith('>') ? 'desc' : 'asc'
     const column = sort.replace(/^[><]/, '')
 
     console.log('1')
