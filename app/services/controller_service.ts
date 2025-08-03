@@ -4,7 +4,7 @@ import env from '#start/env'
 import { MemoryStoreService } from '#services/memory_store_service'
 
 import { Authenticator } from '@adonisjs/auth'
-import { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
+import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 
 export default class ControllerService {
   /**
@@ -13,6 +13,52 @@ export default class ControllerService {
    */
   static async authenticateOrSkipForGuest(auth: Authenticator<Authenticators>, request: Request) {
     if (request.header('Authorization') !== undefined) await auth.authenticate()
+  }
+
+  static applySorting(query: ModelQueryBuilderContract<any>, sort: string | undefined) {
+    console.log('0')
+    console.log({ sort_name: sort })
+    if (!sort) return query
+
+    const direction = sort.startsWith('<') ? 'desc' : 'asc'
+    const column = sort.replace(/^[><]/, '')
+
+    console.log('1')
+    console.log({ column_name: column })
+
+    return query.orderBy(column, direction)
+  }
+
+  static applySearchTokens<Model extends LucidModel>(
+    query: ModelQueryBuilderContract<Model>,
+    searchTokens: string[],
+    callback: (
+      qb: ModelQueryBuilderContract<Model>,
+      tokens: string
+    ) => ModelQueryBuilderContract<Model>,
+    whereWrapper: boolean = true
+  ): ModelQueryBuilderContract<Model> {
+    if (searchTokens.length === 0) return query
+    if (!whereWrapper) return searchTokens.reduce((acc, token) => callback(acc, token), query)
+    return searchTokens.reduce((acc, token) => acc.where((group) => callback(group, token)), query)
+  }
+
+  /**
+   * @arg includes Model relation names
+   * @arg queryToModify Model.query()
+   * @description Used to add data of related models to query
+   */
+  static includeRelations(
+    queryToModify: ModelQueryBuilderContract<any>,
+    includes?: string[] | string
+  ) {
+    if (!includes) return queryToModify
+
+    const relationsToInclude: string[] = Array.isArray(includes) ? includes : [includes]
+    let query = queryToModify
+
+    for (const relation of relationsToInclude) query = query.preload(relation)
+    return query
   }
 
   static async getOrSetCache<T>(
@@ -33,41 +79,6 @@ export default class ControllerService {
 
     await MemoryStoreService.set(key, result, ttlSeconds)
     return result
-  }
-
-  static applySorting(
-    query: ModelQueryBuilderContract<any>,
-    sort: string | undefined
-  ) {
-    console.log('0')
-    console.log({ sort_name: sort })
-    if (!sort) return query
-
-    const direction = sort.startsWith('<') ? 'desc' : 'asc'
-    const column = sort.replace(/^[><]/, '')
-
-    console.log('1')
-    console.log({ column_name: column })
-
-    return query.orderBy(column, direction)
-  }
-
-  /**
-   * @arg includes Model relation names
-   * @arg queryToModify Model.query()
-   * @description Used to add data of related models to query
-   */
-  static includeRelations(
-    queryToModify: ModelQueryBuilderContract<any>,
-    includes?: string[] | string
-  ) {
-    if (!includes) return queryToModify
-
-    const relationsToInclude: string[] = Array.isArray(includes) ? includes : [includes]
-    let query = queryToModify
-
-    for (const relation of relationsToInclude) query = query.preload(relation)
-    return query
   }
 
   private static generateCacheKey(request: Request): string {
