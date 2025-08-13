@@ -5,6 +5,7 @@ import { MemoryStoreService } from '#services/memory_store_service'
 
 import { Authenticator } from '@adonisjs/auth'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
+import HelperService from "#services/helper_service";
 
 export default class ControllerService {
   /**
@@ -36,20 +37,21 @@ export default class ControllerService {
 
   /**
    * @arg query Model.query()
-   * @arg searchTokens Search tokens to filter by
+   * @arg search Search token/s to filter by
    * @arg callback Callback to apply conditions for each token
    * @arg whereWrapper Wrap each token in separate where group
    * @description Applies multiple search tokens to query using provided callback and grouping logic
    */
   static applySearchTokens<Model extends LucidModel>(
     query: ModelQueryBuilderContract<Model>,
-    searchTokens: string[],
+    search: string[] | string,
     callback: (
       qb: ModelQueryBuilderContract<Model>,
       tokens: string
     ) => ModelQueryBuilderContract<Model>,
     whereWrapper: boolean = true
   ): ModelQueryBuilderContract<Model> {
+    const searchTokens = HelperService.singleValueToArray(search)
     if (searchTokens.length === 0) return query
     if (!whereWrapper) return searchTokens.reduce((acc, token) => callback(acc, token), query)
     return searchTokens.reduce((acc, token) => acc.where((group) => callback(group, token)), query)
