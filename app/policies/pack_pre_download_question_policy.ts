@@ -12,10 +12,12 @@ import UserStatus from '#models/user_status'
 export default class PackPreDownloadQuestionPolicy extends BasePolicy {
   @allowGuest()
   async index(user: User): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     return await RoleService.userHaveRoleCheck(['extended', 'super'], user)
   }
 
   async store(user: User): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     return await RoleService.userHaveRoleCheck(['default'], user)
   }
 
@@ -24,6 +26,7 @@ export default class PackPreDownloadQuestionPolicy extends BasePolicy {
     user: User | null,
     requestedPackItem: PackPreDownloadQuestion
   ): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     const packStatus = await PackStatus.findByOrFail({ id: pack.packStatusId })
     const packVisibleLevel = await PackVisibleLevel.findByOrFail({
@@ -45,6 +48,7 @@ export default class PackPreDownloadQuestionPolicy extends BasePolicy {
     user: User,
     requestedPackItem: PackPreDownloadQuestion
   ): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId
   }
@@ -53,12 +57,17 @@ export default class PackPreDownloadQuestionPolicy extends BasePolicy {
     user: User,
     requestedPackItem: PackPreDownloadQuestion
   ): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId || RoleService.userHaveRoleCheck(['super'], user)
   }
 
   private async getPackByPackItemId(packPreDownloadQuestionId: string) {
+    if (this.isDisableOnDevelop) return true
     const packRelease = await PackRelease.findByOrFail({ id: packPreDownloadQuestionId })
     return await Pack.findByOrFail({ id: packRelease.packId })
   }
+
+  private isDisableOnDevelop =
+    env.get('POLICY_DISABLE_ON_DEVELOPMENT', false) && env.get('NODE_ENV') === 'development'
 }

@@ -9,4 +9,10 @@ export default class HelperService {
     if (segments.length === 3 && segments[2] === '0') return segments.slice(0, 2).join('.')
     return version
   }
+
+  /**
+   * @description Wraps single value to array if is not already
+   * @description Value -> [Value]
+   */
+  static singleValueToArray = <T>(value: T | T[]): T[] => (Array.isArray(value) ? value : [value])
 }

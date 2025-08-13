@@ -24,19 +24,15 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const search = request.input('search', '')
+    const search = request.input('search', []) as string | string[] | [] // by validators
 
     const pipeline = new QueryPipelineService(User.query())
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
         search
-          ? q.where((sub) =>
-              sub
-                .whereILike('name', `%${search}%`)
-                .orWhereILike('publicName', `%${search}%`)
-                .orWhereILike('id', search)
-                .orWhereILike('publicId', search)
+          ? ControllerService.applySearchTokens(q, search, (subQ, token) =>
+              subQ.whereILike('publicName', `%${token}%`).orWhereILike('publicId', search)
             )
           : q
       )

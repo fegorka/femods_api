@@ -26,7 +26,7 @@ export default class PacksController {
     await request.validateUsing(requestIncludeValidator(Pack))
     await request.validateUsing(requestSortValidator(Pack))
 
-    const search = request.input('search', '')
+    const search = request.input('search', []) as string | string[] | [] // by validators
 
     const initial = (await bouncer.with(PackPolicy).denies('index'))
       ? this.baseVisibilityQuery()
@@ -37,12 +37,17 @@ export default class PacksController {
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
         search
-          ? q.where((sub) =>
-              sub
-                .whereILike('name', `%${search}%`)
-                .orWhereILike('publicName', `%${search}%`)
-                .orWhereHas('user', (uq) =>
-                  uq.whereILike('name', `%${search}%`)
+          ? ControllerService.applySearchTokens(q, search, (subQ, token) =>
+              subQ
+                .whereILike('publicName', `%${token}%`)
+                .orWhereHas('user', (userQ) => userQ.whereILike('publicName', `%${token}%`))
+                .orWhereHas('packModCore', (packModeCoreQ) =>
+                  packModeCoreQ.whereILike('name', `%${token}%`)
+                )
+                .orWhereHas('packReleases', (packReleasesQ) =>
+                  packReleasesQ.whereHas('gameVersion', (gameVerisonQ) =>
+                    gameVerisonQ.whereILike('name', `%${token}%`)
+                  )
                 )
             )
           : q
@@ -65,9 +70,7 @@ export default class PacksController {
 
     const pipeline = new QueryPipelineService(initial)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
-      .transform((q) =>
-        q.whereHas('tags', (tq) => tq.where('tag_id', params.tagId))
-      )
+      .transform((q) => q.whereHas('tags', (tq) => tq.where('tag_id', params.tagId)))
 
     return pipeline.executeWithCache(request, 120, (q) =>
       q.paginate(request.input('page'), request.input('limit'))
@@ -118,9 +121,9 @@ export default class PacksController {
     }
 
     const includes = request.input('includes')
-    const pipeline = new QueryPipelineService(
-      Pack.query().where('id', params.id)
-    ).transform((q) => ControllerService.includeRelations(q, includes))
+    const pipeline = new QueryPipelineService(Pack.query().where('id', params.id)).transform((q) =>
+      ControllerService.includeRelations(q, includes)
+    )
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
@@ -147,16 +150,12 @@ export default class PacksController {
   }
 
   private baseVisibilityQuery = () =>
-  Pack.query()
-    .whereHas('packStatus', (q) =>
-      q.whereIn('name', Pack.allowedPackStatusToIndex)
-    )
-    .andWhereHas('packVisibleLevel', (q) =>
-      q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
-    )
-    .andWhereHas('user', (q) =>
-      q.whereHas('userStatus', (q2) =>
-        q2.whereIn('name', User.allowedUserStatusToIndex)
+    Pack.query()
+      .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
+      .andWhereHas('packVisibleLevel', (q) =>
+        q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
       )
-    )
+      .andWhereHas('user', (q) =>
+        q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex))
+      )
 }

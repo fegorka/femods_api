@@ -85,6 +85,14 @@ const envSchemaResponseCacheOptional = {
   RESPONSE_CACHE_DISABLE: Env.schema.boolean.optional(),
 }
 
+export type EnvKeysPolicyRequired = keyof typeof envSchemaPolicyRequired
+const envSchemaPolicyRequired = {}
+
+export type EnvKeysPolicyOptional = keyof typeof envSchemaPolicyOptional
+const envSchemaPolicyOptional = {
+  POLICY_DISABLE_ON_DEVELOPMENT: Env.schema.boolean.optional(),
+}
+
 export type EnvKeysAllRequired = keyof typeof envSchemaAllRequired
 const envSchemaAllRequired = {
   ...envSchemaAppRequired,
@@ -94,6 +102,7 @@ const envSchemaAllRequired = {
   ...envSchemaRedisRequired,
   ...envSchemaDiscordRequired,
   ...envSchemaResponseCacheRequired,
+  ...envSchemaPolicyRequired,
 }
 
 export type EnvKeysAllOptional = keyof typeof envSchemaAllOptional
@@ -105,6 +114,7 @@ const envSchemaAllOptional = {
   ...envSchemaRedisOptional,
   ...envSchemaDiscordOptional,
   ...envSchemaResponseCacheOptional,
+  ...envSchemaPolicyOptional,
 }
 
 export default await Env.create(new URL('../', import.meta.url), {
