@@ -11,15 +11,18 @@ import UserStatus from '#models/user_status'
 
 export default class PackItemPolicy extends BasePolicy {
   async index(user: User): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     return await RoleService.userHaveRoleCheck(['extended', 'super'], user)
   }
 
   async store(user: User): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     return await RoleService.userHaveRoleCheck(['default'], user)
   }
 
   @allowGuest()
   async show(user: User | null, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     const packStatus = await PackStatus.findByOrFail({ id: pack.packStatusId })
     const packVisibleLevel = await PackVisibleLevel.findByOrFail({
@@ -38,17 +41,23 @@ export default class PackItemPolicy extends BasePolicy {
   }
 
   async update(user: User, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId
   }
 
   async destroy(user: User, requestedPackItem: PackItem): Promise<AuthorizerResponse> {
+    if (this.isDisableOnDevelop) return true
     const pack = await this.getPackByPackItemId(requestedPackItem.packReleaseId)
     return user.id === pack.userId || RoleService.userHaveRoleCheck(['super'], user)
   }
 
   private async getPackByPackItemId(packItemId: string) {
+    if (this.isDisableOnDevelop) return true
     const packRelease = await PackRelease.findByOrFail({ id: packItemId })
     return await Pack.findByOrFail({ id: packRelease.packId })
   }
+
+  private isDisableOnDevelop =
+    env.get('POLICY_DISABLE_ON_DEVELOPMENT', false) && env.get('NODE_ENV') === 'development'
 }
