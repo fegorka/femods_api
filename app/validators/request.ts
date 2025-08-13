@@ -20,16 +20,20 @@ export const requestPageValidator = vine.compile(
   })
 )
 
-export const requestSearchValidator = vine.compile(
-  vine.object({
-    search: vine
-      .array(vine.string().trim().toLowerCase().minLength(1).maxLength(64))
-      .compact()
-      .notEmpty()
-      .maxLength(8)
-      .optional(),
-  })
-)
+function requestSearchValidatorLogic() {
+  const stringRule = vine.string().trim().toLowerCase().minLength(1).maxLength(64)
+  const schema = vine.group([
+    vine.group.if((data) => vine.helpers.isArray(data.search), {
+      search: vine.array(stringRule).compact().minLength(1).maxLength(8).optional(),
+    }),
+    vine.group.else({
+      search: stringRule,
+    }),
+  ])
+  return vine.compile(vine.object({}).merge(schema))
+}
+
+export const requestSearchValidator = requestSearchValidatorLogic()
 
 function requestIncludeValidatorLogic(model: typeof BaseModel) {
   const allowedRelations: string[] = [...model.$relationsDefinitions.values()].map(
