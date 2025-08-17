@@ -12,7 +12,7 @@ import {
 import { storeUserStatusValidator, updateUserStatusValidator } from '#validators/user_status'
 
 export default class UserStatusesController {
-  async index({ bouncer, request, response }: HttpContext) {
+  async index({ bouncer, request, response, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(UserStatus))
     await request.validateUsing(requestSortValidator(UserStatus))
@@ -21,7 +21,7 @@ export default class UserStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(UserStatus.query())
+    const pipeline = new QueryPipelineService(UserStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -30,7 +30,7 @@ export default class UserStatusesController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(UserStatus))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -44,7 +44,8 @@ export default class UserStatusesController {
     }
 
     const pipeline = new QueryPipelineService(
-      UserStatus.query().where('id', params.id)
+      UserStatus.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())

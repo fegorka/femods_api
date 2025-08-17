@@ -12,10 +12,12 @@ import {
 import { storeRoleValidator, updateRoleValidator } from '#validators/role'
 
 export default class RolesController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, response, request, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(Role))
     await request.validateUsing(requestSortValidator(Role))
+
+    console.log(await bouncer.with(RolePolicy).allows('index'))
 
     if (await bouncer.with(RolePolicy).denies('index')) {
       return response.forbidden('Insufficient permissions')
@@ -24,7 +26,7 @@ export default class RolesController {
     const includes = request.input('includes')
     const sort = request.input('sort')
 
-    const pipeline = new QueryPipelineService(Role.query())
+    const pipeline = new QueryPipelineService(Role.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, includes))
       .transform((q) => ControllerService.applySorting(q, sort))
 
@@ -33,20 +35,18 @@ export default class RolesController {
     )
   }
 
-  async show({ bouncer, response, request, params }: HttpContext) {
+  async show({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(Role))
 
     const role = await Role.findBy({ id: params.id })
-    if (!role) {
-      return response.notFound()
-    }
+    if (!role) return response.notFound()
     if (await bouncer.with(RolePolicy).denies('show', role)) {
       return response.forbidden('Insufficient permissions')
     }
 
     const includes = request.input('includes')
-    const pipeline = new QueryPipelineService(Role.query().where('id', params.id)).transform((q) =>
+    const pipeline = new QueryPipelineService(Role.query().where('id', params.id), appMeta?.transformer).transform((q) =>
       ControllerService.includeRelations(q, includes)
     )
 
@@ -65,9 +65,7 @@ export default class RolesController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const role = await Role.findBy({ id: params.id })
-    if (!role) {
-      return response.notFound()
-    }
+    if (!role) return response.notFound()
     if (await bouncer.with(RolePolicy).denies('update', role)) {
       return response.forbidden('Insufficient permissions')
     }
@@ -80,9 +78,7 @@ export default class RolesController {
     await request.validateUsing(requestParamsCuidValidator)
 
     const role = await Role.findBy({ id: params.id })
-    if (!role) {
-      return response.notFound()
-    }
+    if (!role) return response.notFound()
     if (await bouncer.with(RolePolicy).denies('destroy', role)) {
       return response.forbidden('Insufficient permissions')
     }

@@ -18,7 +18,7 @@ import {
 } from '#validators/request'
 
 export default class TagsController {
-  async index({ auth, bouncer, request, response }: HttpContext) {
+  async index({ auth, bouncer, request, response, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestPageValidator)
@@ -28,7 +28,7 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(Tag.query())
+    const pipeline = new QueryPipelineService(Tag.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -37,7 +37,7 @@ export default class TagsController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestParamsCuidValidator)
@@ -49,7 +49,7 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(Tag.query().where('id', params.id))
+    const pipeline = new QueryPipelineService(Tag.query().where('id', params.id), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())

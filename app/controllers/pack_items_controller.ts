@@ -22,25 +22,7 @@ import {
 } from '#validators/pack_item'
 
 export default class PackItemsController {
-  private baseVisibilityQuery = () =>
-    PackItem.query().whereHas('packRelease', (packReleaseQuery) => {
-      packReleaseQuery.whereHas('pack', (packQuery) => {
-        packQuery
-          .whereHas('packStatus', (q) =>
-            q.whereIn('name', Pack.allowedPackStatusToIndex)
-          )
-          .andWhereHas('packVisibleLevel', (q) =>
-            q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
-          )
-          .andWhereHas('user', (q) =>
-            q.whereHas('userStatus', (q2) =>
-              q2.whereIn('name', User.allowedUserStatusToIndex)
-            )
-          )
-      })
-    })
-
-  public async index({ auth, bouncer, request }: HttpContext) {
+  async index({ auth, bouncer, request, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackItem))
@@ -50,7 +32,7 @@ export default class PackItemsController {
       ? this.baseVisibilityQuery()
       : PackItem.query()
 
-    const pipeline = new QueryPipelineService(initial)
+    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -59,37 +41,7 @@ export default class PackItemsController {
     )
   }
 
-  public async indexByPackRelease({ auth, bouncer, request, params }: HttpContext) {
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
-    await request.validateUsing(indexByPackReleasePackItemValidator)
-    await request.validateUsing(requestPageValidator)
-    await request.validateUsing(requestIncludeValidator(PackItem))
-    await request.validateUsing(requestSortValidator(PackItem))
-
-    const packRelease = await PackRelease.findBy({ id: params.packReleaseId })
-    const pack = packRelease?.packId ? await Pack.findBy({ id: packRelease.packId }) : null
-
-    if (auth.user?.id === pack?.userId) {
-      return PackItem.query()
-        .where('packReleaseId', params.packReleaseId)
-        .paginate(request.input('page'), request.input('limit'))
-    }
-
-    const initial = (await bouncer.with(PackItemPolicy).denies('index'))
-      ? this.baseVisibilityQuery()
-      : PackItem.query()
-
-    const pipeline = new QueryPipelineService(initial)
-      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
-      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
-      .transform((q) => q.where('packReleaseId', params.packReleaseId))
-
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
-    )
-  }
-
-  public async store({ bouncer, response, request }: HttpContext) {
+  async store({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackItemPolicy).denies('store')) {
       return response.forbidden('Insufficient permissions')
     }
@@ -101,7 +53,7 @@ export default class PackItemsController {
     await PackItem.create(payload)
   }
 
-  public async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackItem))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -113,13 +65,14 @@ export default class PackItemsController {
     }
 
     const pipeline = new QueryPipelineService(
-      PackItem.query().where('id', params.id)
+      PackItem.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  public async update({ bouncer, response, request, params }: HttpContext) {
+  async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
     const item = await PackItem.findBy({ id: params.id })
@@ -135,7 +88,7 @@ export default class PackItemsController {
     await PackItem.updateOrCreate({ id: item.id }, payload)
   }
 
-  public async destroy({ bouncer, response, request, params }: HttpContext) {
+  async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
     const item = await PackItem.findBy({ id: params.id })
@@ -146,4 +99,18 @@ export default class PackItemsController {
 
     return item.delete()
   }
+
+  private baseVisibilityQuery = () =>
+    PackItem.query().whereHas('packRelease', (packReleaseQuery) => {
+      packReleaseQuery.whereHas('pack', (packQuery) => {
+        packQuery
+          .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
+          .andWhereHas('packVisibleLevel', (q) =>
+            q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+          )
+          .andWhereHas('user', (q) =>
+            q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex))
+          )
+      })
+    })
 }

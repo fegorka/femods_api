@@ -18,7 +18,7 @@ import {
 } from '#validators/pack_item_type'
 
 export default class PackItemTypesController {
-  public async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, response, request, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackItemType))
     await request.validateUsing(requestSortValidator(PackItemType))
@@ -26,7 +26,7 @@ export default class PackItemTypesController {
     if (await bouncer.with(PackItemTypePolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(PackItemType.query())
+    const pipeline = new QueryPipelineService(PackItemType.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -35,7 +35,7 @@ export default class PackItemTypesController {
     )
   }
 
-  public async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackItemType))
 
@@ -48,13 +48,14 @@ export default class PackItemTypesController {
       return response.forbidden('Insufficient permissions')
 
     const pipeline = new QueryPipelineService(
-      PackItemType.query().where('id', params.id)
+      PackItemType.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  public async store({ bouncer, response, request }: HttpContext) {
+  async store({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackItemTypePolicy).denies('store'))
       return response.forbidden('Insufficient permissions')
 
@@ -62,7 +63,7 @@ export default class PackItemTypesController {
     await PackItemType.create(payload)
   }
 
-  public async update({ bouncer, response, request, params }: HttpContext) {
+  async update({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedPackItemType = await PackItemType.findBy({ id: params.id })
@@ -71,11 +72,13 @@ export default class PackItemTypesController {
     if (await bouncer.with(PackItemTypePolicy).denies('update', requestedPackItemType))
       return response.forbidden('Insufficient permissions')
 
-    const payload = await request.validateUsing(updatePackItemTypeValidator(requestedPackItemType.id))
+    const payload = await request.validateUsing(
+      updatePackItemTypeValidator(requestedPackItemType.id)
+    )
     await PackItemType.updateOrCreate({ id: requestedPackItemType.id }, payload)
   }
 
-  public async destroy({ bouncer, response, request, params }: HttpContext) {
+  async destroy({ bouncer, response, request, params }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
 
     const requestedPackItemType = await PackItemType.findBy({ id: params.id })

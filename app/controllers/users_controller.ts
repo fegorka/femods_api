@@ -15,7 +15,7 @@ import {
 } from '#validators/request'
 
 export default class UsersController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, response, request, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
     await request.validateUsing(requestIncludeValidator(User))
@@ -26,7 +26,7 @@ export default class UsersController {
 
     const search = request.input('search', []) as string | string[] | [] // by validators
 
-    const pipeline = new QueryPipelineService(User.query())
+    const pipeline = new QueryPipelineService(User.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
@@ -42,7 +42,7 @@ export default class UsersController {
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(User))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -54,7 +54,8 @@ export default class UsersController {
       return response.forbidden('Insufficient permissions')
 
     const pipeline = new QueryPipelineService(
-      User.query().where('id', params.id)
+      User.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())

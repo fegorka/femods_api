@@ -19,7 +19,7 @@ import {
 } from '#validators/pack'
 
 export default class PacksController {
-  async index({ auth, bouncer, request }: HttpContext) {
+  async index({ auth, bouncer, request, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
@@ -32,7 +32,7 @@ export default class PacksController {
       ? this.baseVisibilityQuery()
       : Pack.query()
 
-    const pipeline = new QueryPipelineService(initial)
+    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
@@ -58,49 +58,6 @@ export default class PacksController {
     )
   }
 
-  async indexByTag({ auth, bouncer, request, params }: HttpContext) {
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
-    await request.validateUsing(indexByTagPackValidator)
-    await request.validateUsing(requestPageValidator)
-    await request.validateUsing(requestIncludeValidator(Pack))
-
-    const initial = (await bouncer.with(PackPolicy).denies('index'))
-      ? this.baseVisibilityQuery()
-      : Pack.query()
-
-    const pipeline = new QueryPipelineService(initial)
-      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
-      .transform((q) => q.whereHas('tags', (tq) => tq.where('tag_id', params.tagId)))
-
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
-    )
-  }
-
-  async indexByUser({ auth, bouncer, request, params }: HttpContext) {
-    await ControllerService.authenticateOrSkipForGuest(auth, request)
-    await request.validateUsing(indexByUserPackValidator)
-    await request.validateUsing(requestPageValidator)
-    await request.validateUsing(requestIncludeValidator(Pack))
-
-    if (auth.user?.id === params.userId) {
-      return Pack.findManyBy({ userId: params.userId })
-    }
-
-    const includes = request.input('includes')
-    const initial = (await bouncer.with(PackPolicy).denies('index'))
-      ? this.baseVisibilityQuery()
-      : Pack.query()
-
-    const pipeline = new QueryPipelineService(initial)
-      .transform((q) => ControllerService.includeRelations(q, includes))
-      .transform((q) => q.where('userId', params.userId))
-
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
-    )
-  }
-
   async store({ bouncer, response, request }: HttpContext) {
     if (await bouncer.with(PackPolicy).denies('store')) {
       return response.forbidden('Insufficient permissions')
@@ -109,7 +66,7 @@ export default class PacksController {
     await Pack.create(payload)
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(Pack))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -121,7 +78,7 @@ export default class PacksController {
     }
 
     const includes = request.input('includes')
-    const pipeline = new QueryPipelineService(Pack.query().where('id', params.id)).transform((q) =>
+    const pipeline = new QueryPipelineService(Pack.query().where('id', params.id), appMeta?.transformer).transform((q) =>
       ControllerService.includeRelations(q, includes)
     )
 

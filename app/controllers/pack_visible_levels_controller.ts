@@ -17,7 +17,7 @@ import {
 } from '#validators/request'
 
 export default class PackVisibleLevelsController {
-  async index({ bouncer, request, response }: HttpContext) {
+  async index({ bouncer, request, response, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
     await request.validateUsing(requestSortValidator(PackVisibleLevel))
@@ -25,7 +25,7 @@ export default class PackVisibleLevelsController {
     if (await bouncer.with(PackVisibleLevelPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(PackVisibleLevel.query())
+    const pipeline = new QueryPipelineService(PackVisibleLevel.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -34,7 +34,7 @@ export default class PackVisibleLevelsController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -46,7 +46,8 @@ export default class PackVisibleLevelsController {
       return response.forbidden('Insufficient permissions')
 
     const pipeline = new QueryPipelineService(
-      PackVisibleLevel.query().where('id', params.id)
+      PackVisibleLevel.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())

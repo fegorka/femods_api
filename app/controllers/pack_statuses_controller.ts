@@ -17,7 +17,7 @@ import {
 } from '#validators/pack_status'
 
 export default class PackStatusesController {
-  async index({ bouncer, request, response }: HttpContext) {
+  async index({ bouncer, request, response, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackStatus))
     await request.validateUsing(requestSortValidator(PackStatus))
@@ -25,7 +25,7 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(PackStatus.query())
+    const pipeline = new QueryPipelineService(PackStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -34,7 +34,7 @@ export default class PackStatusesController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator)
     await request.validateUsing(requestIncludeValidator(PackStatus))
 
@@ -47,7 +47,8 @@ export default class PackStatusesController {
       return response.forbidden('Insufficient permissions')
 
     const pipeline = new QueryPipelineService(
-      PackStatus.query().where('id', params.id)
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
