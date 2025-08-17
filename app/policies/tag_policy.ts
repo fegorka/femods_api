@@ -3,6 +3,7 @@ import { allowGuest, BasePolicy } from '@adonisjs/bouncer'
 import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 import Tag from '#models/tag'
+import env from '#start/env'
 
 export default class TagPolicy extends BasePolicy {
   @allowGuest()

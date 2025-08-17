@@ -7,6 +7,7 @@ import PackRelease from '#models/pack_release'
 import PackStatus from '#models/pack_status'
 import PackVisibleLevel from '#models/pack_visible_level'
 import UserStatus from '#models/user_status'
+import env from '#start/env'
 
 export default class PackReleasePolicy extends BasePolicy {
   @allowGuest()

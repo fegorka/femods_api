@@ -3,6 +3,7 @@ import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 import User from '#models/user'
 import PackItemType from '#models/pack_item_type'
+import env from '#start/env'
 
 export default class PackItemTypePolicy extends BasePolicy {
   async index(_user: User): Promise<AuthorizerResponse> {

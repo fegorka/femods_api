@@ -8,6 +8,7 @@ import PackStatus from '#models/pack_status'
 import PackRelease from '#models/pack_release'
 import Pack from '#models/pack'
 import UserStatus from '#models/user_status'
+import env from '#start/env'
 
 export default class PackPreDownloadQuestionPolicy extends BasePolicy {
   @allowGuest()
@@ -63,7 +64,6 @@ export default class PackPreDownloadQuestionPolicy extends BasePolicy {
   }
 
   private async getPackByPackItemId(packPreDownloadQuestionId: string) {
-    if (this.isDisableOnDevelop) return true
     const packRelease = await PackRelease.findByOrFail({ id: packPreDownloadQuestionId })
     return await Pack.findByOrFail({ id: packRelease.packId })
   }
