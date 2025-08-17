@@ -45,7 +45,7 @@ export default class GameVersionsController {
     const pipeline = new QueryPipelineService(
       GameVersion.query().where('id', params.id),
       appMeta?.transformer
-      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
