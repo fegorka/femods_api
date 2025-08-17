@@ -1,7 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
-import PackRelease from '#models/pack_release'
 import ControllerService from '#services/controller_service'
 import { QueryPipelineService } from '#services/query_pipeline_service'
 
@@ -12,7 +11,6 @@ import {
   requestSortValidator,
 } from '#validators/request'
 import {
-  indexByPackReleasePackPreDownloadQuestionValidator,
   preCheckPackPreDownloadQuestionReleaseIdValidator,
   storePackPreDownloadQuestionValidator,
   updatePackPreDownloadQuestionValidator,

@@ -3,7 +3,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackItem from '#models/pack_item'
 import Pack from '#models/pack'
 import User from '#models/user'
-import PackRelease from '#models/pack_release'
 import PackItemPolicy from '#policies/pack_item_policy'
 import ControllerService from '#services/controller_service'
 import { QueryPipelineService } from '#services/query_pipeline_service'
@@ -15,7 +14,6 @@ import {
   requestSortValidator,
 } from '#validators/request'
 import {
-  indexByPackReleasePackItemValidator,
   preCheckPackItemReleaseIdValidator,
   storePackItemValidator,
   updatePackItemValidator,

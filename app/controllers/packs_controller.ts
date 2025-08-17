@@ -12,8 +12,6 @@ import {
   requestSortValidator,
 } from '#validators/request'
 import {
-  indexByTagPackValidator,
-  indexByUserPackValidator,
   storePackValidator,
   updatePackValidator,
 } from '#validators/pack'

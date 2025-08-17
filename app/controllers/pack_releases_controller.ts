@@ -13,7 +13,6 @@ import {
   requestSortValidator,
 } from '#validators/request'
 import {
-  indexByPackPackReleaseValidator,
   preCheckPackReleasePackIdValidator,
   storePackReleaseIdeValidator,
   updatePackReleaseIdValidator,
