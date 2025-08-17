@@ -22,15 +22,10 @@ export default class ControllerService {
    * @description Applies sorting to query
    */
   static applySorting(query: ModelQueryBuilderContract<any>, sort: string | undefined) {
-    console.log('0')
-    console.log({ sort_name: sort })
     if (!sort) return query
 
     const direction = sort.startsWith('>') ? 'desc' : 'asc'
     const column = sort.replace(/^[><]/, '')
-
-    console.log('1')
-    console.log({ column_name: column })
 
     return query.orderBy(column, direction)
   }
