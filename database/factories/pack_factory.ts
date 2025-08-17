@@ -14,7 +14,8 @@ export const PackFactory = factory
     return {
       publicName: cuid(), // .word() no unique, uses .cuid()
       totalDownloadCount: BigInt(randomInt(999_999_999_999)),
-      packVisibleLevelId: packVisibleLevels[Math.max(randomInt(packVisibleLevels.length - 1), 0)].id,
+      packVisibleLevelId:
+        packVisibleLevels[Math.max(randomInt(packVisibleLevels.length - 1), 0)].id,
       packModCoreId: packModCores[Math.max(randomInt(packVisibleLevels.length - 1), 0)].id,
     }
   })

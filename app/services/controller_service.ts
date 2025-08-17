@@ -5,7 +5,7 @@ import { MemoryStoreService } from '#services/memory_store_service'
 
 import { Authenticator } from '@adonisjs/auth'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
-import HelperService from "#services/helper_service";
+import HelperService from '#services/helper_service'
 
 export default class ControllerService {
   /**

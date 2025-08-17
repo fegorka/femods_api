@@ -11,10 +11,7 @@ import {
   requestParamsCuidValidator,
   requestSortValidator,
 } from '#validators/request'
-import {
-  storePackStatusValidator,
-  updatePackStatusValidator,
-} from '#validators/pack_status'
+import { storePackStatusValidator, updatePackStatusValidator } from '#validators/pack_status'
 
 export default class PackStatusesController {
   async index({ bouncer, request, response, appMeta }: HttpContext) {

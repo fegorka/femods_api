@@ -45,9 +45,7 @@ export default class PackReleasesController {
     }
 
     await request.validateUsing(preCheckPackReleasePackIdValidator)
-    const payload = await request.validateUsing(
-      storePackReleaseIdeValidator(request.body().packId)
-    )
+    const payload = await request.validateUsing(storePackReleaseIdeValidator(request.body().packId))
     await PackRelease.create(payload)
   }
 
@@ -99,18 +97,14 @@ export default class PackReleasesController {
   }
 
   private baseVisibilityQuery = () =>
-  PackRelease.query().whereHas('pack', (packQuery) => {
-    packQuery
-      .whereHas('packStatus', (q) =>
-        q.whereIn('name', Pack.allowedPackStatusToIndex)
-      )
-      .andWhereHas('packVisibleLevel', (q) =>
-        q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
-      )
-      .andWhereHas('user', (q) =>
-        q.whereHas('userStatus', (q2) =>
-          q2.whereIn('name', User.allowedUserStatusToIndex)
+    PackRelease.query().whereHas('pack', (packQuery) => {
+      packQuery
+        .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
+        .andWhereHas('packVisibleLevel', (q) =>
+          q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
         )
-      )
-  })
+        .andWhereHas('user', (q) =>
+          q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex))
+        )
+    })
 }

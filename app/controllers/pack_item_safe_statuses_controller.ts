@@ -72,9 +72,7 @@ export default class PackItemSafeStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const payload = await request.validateUsing(
-      updatePackItemSafeStatusValidator(entity.id)
-    )
+    const payload = await request.validateUsing(updatePackItemSafeStatusValidator(entity.id))
     await PackItemSafeStatus.updateOrCreate({ id: entity.id }, payload)
   }
 

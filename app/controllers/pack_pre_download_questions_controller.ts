@@ -82,10 +82,7 @@ export default class PackPreDownloadQuestionsController {
 
     await request.validateUsing(preCheckPackPreDownloadQuestionReleaseIdValidator)
     const payload = await request.validateUsing(
-      updatePackPreDownloadQuestionValidator(
-        request.body().packReleaseId,
-        question.id
-      )
+      updatePackPreDownloadQuestionValidator(request.body().packReleaseId, question.id)
     )
     await PackPreDownloadQuestion.updateOrCreate({ id: question.id }, payload)
   }
@@ -103,12 +100,16 @@ export default class PackPreDownloadQuestionsController {
   }
 
   private baseVisibilityQuery = () =>
-  PackPreDownloadQuestion.query().whereHas('packRelease', (packReleaseQuery) => {
-    packReleaseQuery.whereHas('pack', (packQuery) => {
-      packQuery
-        .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
-        .andWhereHas('packVisibleLevel', (q) => q.whereIn('name', Pack.allowedPackVisibleLevelToIndex))
-        .andWhereHas('user', (q) => q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex)))
+    PackPreDownloadQuestion.query().whereHas('packRelease', (packReleaseQuery) => {
+      packReleaseQuery.whereHas('pack', (packQuery) => {
+        packQuery
+          .whereHas('packStatus', (q) => q.whereIn('name', Pack.allowedPackStatusToIndex))
+          .andWhereHas('packVisibleLevel', (q) =>
+            q.whereIn('name', Pack.allowedPackVisibleLevelToIndex)
+          )
+          .andWhereHas('user', (q) =>
+            q.whereHas('userStatus', (q2) => q2.whereIn('name', User.allowedUserStatusToIndex))
+          )
+      })
     })
-  })
 }

@@ -12,10 +12,7 @@ import {
   requestSortValidator,
 } from '#validators/request'
 
-import {
-  storePackItemTypeValidator,
-  updatePackItemTypeValidator,
-} from '#validators/pack_item_type'
+import { storePackItemTypeValidator, updatePackItemTypeValidator } from '#validators/pack_item_type'
 
 export default class PackItemTypesController {
   async index({ bouncer, response, request, appMeta }: HttpContext) {

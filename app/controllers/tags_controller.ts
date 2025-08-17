@@ -5,10 +5,7 @@ import TagPolicy from '#policies/tag_policy'
 import ControllerService from '#services/controller_service'
 import { QueryPipelineService } from '#services/query_pipeline_service'
 
-import {
-  storeTagValidator,
-  updateTagValidator,
-} from '#validators/tag'
+import { storeTagValidator, updateTagValidator } from '#validators/tag'
 
 import {
   requestIncludeValidator,
@@ -49,8 +46,10 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(Tag.query().where('id', params.id), appMeta?.transformer)
-      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+    const pipeline = new QueryPipelineService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
