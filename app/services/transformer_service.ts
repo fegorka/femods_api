@@ -19,10 +19,10 @@ export interface TransformerConfig<M extends LucidModel> {
 }
 
 export class TransformerService<Model extends LucidModel> {
-
   constructor(initialQuery: ModelQueryBuilderContract<Model>, config?: TransformerConfig<Model>) {
     this.q = initialQuery
-    if (config?.nestedResources) this.q = this.applyParentRecursively(this.q, config.nestedResources)
+    if (config?.nestedResources)
+      this.q = this.applyParentRecursively(this.q, config.nestedResources)
   }
 
   query(): ModelQueryBuilderContract<Model> {
@@ -81,7 +81,7 @@ export class TransformerService<Model extends LucidModel> {
 
     return query.whereHas(parent.parentRelation as any, (nested) => {
       nested.where(parent.parentPrimaryKey, parent.parentId)
-      
+
       if (index + 1 < parents.length) {
         this.applyParentRecursively(nested, parents, index + 1)
       }
