@@ -5,13 +5,18 @@ import vine from '@vinejs/vine'
 import { ModelService } from '#services/model_service'
 import { ExtendedBaseModel } from '#models/extended_base_model'
 
-export const requestParamsCuidValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.string().cuid(),
-    }),
-  })
-)
+function requestParamsCuidValidatorLogic(paramName: string) {
+  return vine.compile(
+    vine.object({
+      params: vine.object({
+        [paramName]: vine.string().cuid(),
+      }),
+    })
+  )
+}
+
+export const requestParamsCuidValidator = (paramName: string = 'id') =>
+  requestParamsCuidValidatorLogic(paramName)
 
 export const requestPageValidator = vine.compile(
   vine.object({
