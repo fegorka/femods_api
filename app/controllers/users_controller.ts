@@ -37,8 +37,15 @@ export default class UsersController {
           : q
       )
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'users',
+        tags: ['user:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -58,7 +65,12 @@ export default class UsersController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'users',
+      tags: [`user:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
@@ -74,6 +86,7 @@ export default class UsersController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(updateUserValidator(user.id))
+    await TransformerService.invalidateCache({ tags: [`user:${params.id}`] })
     await User.updateOrCreate({ id: user.id }, payload)
   }
 
@@ -89,6 +102,7 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('destroy', user))
       return response.forbidden('Insufficient permissions')
 
+    await TransformerService.invalidateCache({ tags: [`user:${params.id}`] })
     return user.delete()
   }
 }

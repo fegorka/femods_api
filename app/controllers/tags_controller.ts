@@ -29,8 +29,15 @@ export default class TagsController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'tags',
+        tags: ['tag:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -51,7 +58,12 @@ export default class TagsController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'tags',
+      tags: [`tag:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -59,6 +71,8 @@ export default class TagsController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(storeTagValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'tags' })
     await Tag.create(payload)
   }
 
@@ -75,6 +89,7 @@ export default class TagsController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(updateTagValidator(requestedTag.id))
+    await TransformerService.invalidateCache({ namespace: 'tags' })
     await Tag.updateOrCreate({ id: requestedTag.id }, payload)
   }
 
@@ -90,6 +105,7 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('destroy', requestedTag))
       return response.forbidden('Insufficient permissions')
 
+    await TransformerService.invalidateCache({ namespace: 'tags' })
     return requestedTag.delete()
   }
 }

@@ -25,8 +25,15 @@ export default class UserStatusesController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'userStatuses',
+        tags: ['userStatus:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -48,7 +55,12 @@ export default class UserStatusesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'userStatuses',
+      tags: [`userStatus:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -56,6 +68,8 @@ export default class UserStatusesController {
       return response.forbidden('Insufficient permissions')
     }
     const payload = await request.validateUsing(storeUserStatusValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'userStatuses' })
     await UserStatus.create(payload)
   }
 
@@ -72,6 +86,7 @@ export default class UserStatusesController {
     }
 
     const payload = await request.validateUsing(updateUserStatusValidator(status.id))
+    await TransformerService.invalidateCache({ namespace: 'userStatuses' })
     await UserStatus.updateOrCreate({ id: status.id }, payload)
   }
 
@@ -86,6 +101,7 @@ export default class UserStatusesController {
     if (await bouncer.with(UserStatusPolicy).denies('destroy', status)) {
       return response.forbidden('Insufficient permissions')
     }
+    await TransformerService.invalidateCache({ namespace: 'userStatuses' })
     return status.delete()
   }
 }

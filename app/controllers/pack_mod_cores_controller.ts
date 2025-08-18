@@ -25,8 +25,15 @@ export default class PackModCoresController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packModCores',
+        tags: ['packModCore:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -47,7 +54,12 @@ export default class PackModCoresController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packModCores',
+      tags: [`packModCore:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -56,6 +68,8 @@ export default class PackModCoresController {
     }
 
     const payload = await request.validateUsing(storePackModCoreValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'packModCores' })
     await PackModCore.create(payload)
   }
 
@@ -74,6 +88,7 @@ export default class PackModCoresController {
 
     const payload = await request.validateUsing(updatepackModCoreValidator(requestedPackModCore.id))
 
+    await TransformerService.invalidateCache({ namespace: 'packModCores' })
     await PackModCore.updateOrCreate({ id: requestedPackModCore.id }, payload)
   }
 
@@ -90,6 +105,7 @@ export default class PackModCoresController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ namespace: 'packModCores' })
     return requestedPackModCore.delete()
   }
 }

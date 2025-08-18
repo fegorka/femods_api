@@ -33,8 +33,15 @@ export default class PackPreDownloadQuestionsController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packPreDownloadQuestions',
+        tags: ['packPreDownloadQuestion:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -66,7 +73,12 @@ export default class PackPreDownloadQuestionsController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packPreDownloadQuestions',
+      tags: [`packPreDownloadQuestion:${params.id}`],
+      ttl: '2m',
+      grace: '4m',
+    })
   }
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
@@ -85,6 +97,8 @@ export default class PackPreDownloadQuestionsController {
     const payload = await request.validateUsing(
       updatePackPreDownloadQuestionValidator(request.body().packReleaseId, question.id)
     )
+
+    await TransformerService.invalidateCache({ tags: [`packPreDownloadQuestion:${params.id}`] })
     await PackPreDownloadQuestion.updateOrCreate({ id: question.id }, payload)
   }
 
@@ -100,6 +114,7 @@ export default class PackPreDownloadQuestionsController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ tags: [`packPreDownloadQuestion:${params.id}`] })
     return question.delete()
   }
 

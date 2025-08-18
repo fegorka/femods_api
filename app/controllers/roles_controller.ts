@@ -17,8 +17,6 @@ export default class RolesController {
     await request.validateUsing(requestIncludeValidator(Role))
     await request.validateUsing(requestSortValidator(Role))
 
-    console.log(await bouncer.with(RolePolicy).allows('index'))
-
     if (await bouncer.with(RolePolicy).denies('index')) {
       return response.forbidden('Insufficient permissions')
     }
@@ -30,8 +28,15 @@ export default class RolesController {
       .transform((q) => ControllerService.includeRelations(q, includes))
       .transform((q) => ControllerService.applySorting(q, sort))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'roles',
+        tags: ['role:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -51,7 +56,12 @@ export default class RolesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, includes))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'roles',
+      tags: [`role:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -59,6 +69,8 @@ export default class RolesController {
       return response.forbidden('Insufficient permissions')
     }
     const payload = await request.validateUsing(storeRoleValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'roles' })
     await Role.create(payload)
   }
 
@@ -75,6 +87,8 @@ export default class RolesController {
     }
 
     const payload = await request.validateUsing(updateRoleValidator(role.id))
+
+    await TransformerService.invalidateCache({ namespace: 'roles' })
     await Role.updateOrCreate({ id: role.id }, payload)
   }
 
@@ -90,6 +104,7 @@ export default class RolesController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ namespace: 'roles' })
     return role.delete()
   }
 }

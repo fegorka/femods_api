@@ -26,8 +26,15 @@ export default class PackStatusesController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packStatuses',
+        tags: ['packStatus:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -48,7 +55,12 @@ export default class PackStatusesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packStatuses',
+      tags: [`packStatus:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -56,6 +68,8 @@ export default class PackStatusesController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(storePackStatusValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'packStatuses' })
     await PackStatus.create(payload)
   }
 
@@ -74,6 +88,8 @@ export default class PackStatusesController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(updatePackStatusValidator(requestedPackStatus.id))
+
+    await TransformerService.invalidateCache({ namespace: 'packStatuses' })
     await PackStatus.updateOrCreate({ id: requestedPackStatus.id }, payload)
   }
 
@@ -91,6 +107,7 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('destroy', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
 
+    await TransformerService.invalidateCache({ namespace: 'packStatuses' })
     return requestedPackStatus.delete()
   }
 }
