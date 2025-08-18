@@ -6,11 +6,11 @@ import { requestParamsCuidValidator } from '#validators/request'
 import { BasePolicy } from '@adonisjs/bouncer'
 
 type AnyPolicy = new (...args: any[]) => BasePolicy & {
-  index: (...args: any[]) => any,
-  show: (...args: any[]) => any,
-  store: (...args: any[]) => any,
-  update: (...args: any[]) => any,
-  destroy: (...args: any[]) => any,
+  index: (...args: any[]) => any
+  show: (...args: any[]) => any
+  store: (...args: any[]) => any
+  update: (...args: any[]) => any
+  destroy: (...args: any[]) => any
 }
 
 type NestedResourceOption = {
@@ -41,7 +41,7 @@ export default class NestedResourceMiddleware {
       const parent = await resource.parent.find(parentId)
       if (!parent) return response.notFound()
 
-      if (await bouncer.with(resource.policy).denies((resource.policyMethod || 'index'), parent)) {
+      if (await bouncer.with(resource.policy).denies(resource.policyMethod || 'index', parent)) {
         return response.forbidden('Insufficient permissions')
       }
 
