@@ -24,6 +24,10 @@ export default class UserPolicy extends BasePolicy {
     )
   }
 
+  async store(): Promise<AuthorizerResponse> {
+    return false
+  }
+
   async update(user: User, requestedUser: User): Promise<AuthorizerResponse> {
     if (this.isDisableOnDevelop) return true
     return user.id === requestedUser.id
