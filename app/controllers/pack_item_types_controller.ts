@@ -27,8 +27,15 @@ export default class PackItemTypesController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packItemTypes',
+        tags: ['packItemType:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -49,7 +56,12 @@ export default class PackItemTypesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packItemTypes',
+      tags: [`packItemType:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -57,6 +69,8 @@ export default class PackItemTypesController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(storePackItemTypeValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'packItemTypes' })
     await PackItemType.create(payload)
   }
 
@@ -75,6 +89,8 @@ export default class PackItemTypesController {
     const payload = await request.validateUsing(
       updatePackItemTypeValidator(requestedPackItemType.id)
     )
+
+    await TransformerService.invalidateCache({ namespace: 'packItemTypes' })
     await PackItemType.updateOrCreate({ id: requestedPackItemType.id }, payload)
   }
 
@@ -90,6 +106,7 @@ export default class PackItemTypesController {
     if (await bouncer.with(PackItemTypePolicy).denies('destroy', requestedPackItemType))
       return response.forbidden('Insufficient permissions')
 
+    await TransformerService.invalidateCache({ namespace: 'packItemTypes' })
     return await requestedPackItemType.delete()
   }
 }

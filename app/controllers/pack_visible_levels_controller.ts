@@ -29,8 +29,15 @@ export default class PackVisibleLevelsController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'userVisibleLevels',
+        tags: ['packVisibleLevel:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -50,7 +57,12 @@ export default class PackVisibleLevelsController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packVisibleLevels',
+      tags: [`packVisibleLevel:${params.id}`],
+      ttl: '2m',
+      grace: '4m',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -58,6 +70,8 @@ export default class PackVisibleLevelsController {
       return response.forbidden('Insufficient permissions')
 
     const payload = await request.validateUsing(storePackVisibleLevelValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'packVisibleLevels' })
     await PackVisibleLevel.create(payload)
   }
 
@@ -77,6 +91,8 @@ export default class PackVisibleLevelsController {
     const payload = await request.validateUsing(
       updatePackVisibleLevelValidator(packVisibleLevel.id)
     )
+
+    await TransformerService.invalidateCache({ namespace: 'packVisibleLevels' })
     await PackVisibleLevel.updateOrCreate({ id: packVisibleLevel.id }, payload)
   }
 
@@ -93,6 +109,7 @@ export default class PackVisibleLevelsController {
     if (await bouncer.with(PackVisibleLevelPolicy).denies('destroy', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
 
+    await TransformerService.invalidateCache({ namespace: 'packVisibleLevels' })
     return packVisibleLevel.delete()
   }
 }

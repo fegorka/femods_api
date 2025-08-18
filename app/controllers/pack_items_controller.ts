@@ -34,8 +34,15 @@ export default class PackItemsController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packItems',
+        tags: ['packItem:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -67,7 +74,12 @@ export default class PackItemsController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packItems',
+      tags: [`packItem:${params.id}`],
+      ttl: '2m',
+      grace: '4m',
+    })
   }
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
@@ -86,6 +98,8 @@ export default class PackItemsController {
     const payload = await request.validateUsing(
       updatePackItemValidator(request.body().packReleaseId, item.id)
     )
+
+    await TransformerService.invalidateCache({ tags: [`packItem:${params.id}`] })
     await PackItem.updateOrCreate({ id: item.id }, payload)
   }
 
@@ -101,6 +115,7 @@ export default class PackItemsController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ tags: [`packItem:${params.id}`] })
     return item.delete()
   }
 

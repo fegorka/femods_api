@@ -28,8 +28,15 @@ export default class PackItemSafeStatusesController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packItemSafeStatuses',
+        tags: ['packItemSafeStatus:index'],
+        ttl: '12h',
+        grace: '24h',
+      }
     )
   }
 
@@ -50,7 +57,12 @@ export default class PackItemSafeStatusesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packItemSafeStatuses',
+      tags: [`packItemSafeStatus:${params.id}`],
+      ttl: '12h',
+      grace: '24h',
+    })
   }
 
   async store({ bouncer, response, request }: HttpContext) {
@@ -59,6 +71,8 @@ export default class PackItemSafeStatusesController {
     }
 
     const payload = await request.validateUsing(storePackItemSafeStatusValidator)
+
+    await TransformerService.invalidateCache({ namespace: 'packItemSafeStatuses' })
     await PackItemSafeStatus.create(payload)
   }
 
@@ -76,6 +90,7 @@ export default class PackItemSafeStatusesController {
     }
 
     const payload = await request.validateUsing(updatePackItemSafeStatusValidator(entity.id))
+    await TransformerService.invalidateCache({ namespace: 'packItemSafeStatuses' })
     await PackItemSafeStatus.updateOrCreate({ id: entity.id }, payload)
   }
 
@@ -92,6 +107,7 @@ export default class PackItemSafeStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ namespace: 'packItemSafeStatuses' })
     return await entity.delete()
   }
 }

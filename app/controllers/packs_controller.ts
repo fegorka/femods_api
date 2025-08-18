@@ -48,8 +48,15 @@ export default class PacksController {
           : q
       )
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packs',
+        tags: ['pack:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -78,7 +85,12 @@ export default class PacksController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, includes))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packs',
+      tags: [`pack:${params.id}`],
+      ttl: '2m',
+      grace: '4m',
+    })
   }
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
@@ -93,6 +105,8 @@ export default class PacksController {
       return response.forbidden('Insufficient permissions')
     }
     const payload = await request.validateUsing(updatePackValidator(pack.id))
+
+    await TransformerService.invalidateCache({ tags: [`pack:${params.id}`] })
     await Pack.updateOrCreate({ id: pack.id }, payload)
   }
 
@@ -107,6 +121,8 @@ export default class PacksController {
     if (await bouncer.with(PackPolicy).denies('destroy', pack)) {
       return response.forbidden('Insufficient permissions')
     }
+
+    await TransformerService.invalidateCache({ tags: [`pack:${params.id}`] })
     return pack.delete()
   }
 

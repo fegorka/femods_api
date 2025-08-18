@@ -33,8 +33,15 @@ export default class PackReleasesController {
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
-    return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input('page'), request.input('limit'))
+    return pipeline.executeWithCache(
+      request,
+      (q) => q.paginate(request.input('page'), request.input('limit')),
+      {
+        namespace: 'packReleases',
+        tags: ['packRelease:index'],
+        ttl: '2m',
+        grace: '4m',
+      }
     )
   }
 
@@ -64,7 +71,12 @@ export default class PackReleasesController {
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first())
+    return pipeline.executeWithCache(request, (q) => q.first(), {
+      namespace: 'packReleases',
+      tags: [`packRelease:${params.id}`],
+      ttl: '2m',
+      grace: '4m',
+    })
   }
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
@@ -85,6 +97,8 @@ export default class PackReleasesController {
     const payload = await request.validateUsing(
       updatePackReleaseIdValidator(request.body().packId, packRelease.id)
     )
+
+    await TransformerService.invalidateCache({ tags: [`packRelease:${params.id}`] })
     await PackRelease.updateOrCreate({ id: packRelease.id }, payload)
   }
 
@@ -102,6 +116,7 @@ export default class PackReleasesController {
       return response.forbidden('Insufficient permissions')
     }
 
+    await TransformerService.invalidateCache({ tags: [`packRelease:${params.id}`] })
     return packRelease.delete()
   }
 
