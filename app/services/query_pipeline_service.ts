@@ -1,10 +1,10 @@
-import { ModelQueryBuilderContract, LucidModel } from '@adonisjs/lucid/types/model'
+import type { ModelQueryBuilderContract, LucidModel } from '@adonisjs/lucid/types/model'
 import { ExtractModelRelations } from '@adonisjs/lucid/types/relations'
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { Request } from '@adonisjs/core/http'
 import ControllerService from '#services/controller_service'
 
-export type NestedResource<M extends LucidModel> = {
+export type NestedResourceItem<M extends LucidModel> = {
   parent: InstanceType<typeof BaseModel>
   parentRelation: ExtractModelRelations<InstanceType<M>>
   parentPrimaryKey: string
@@ -13,32 +13,44 @@ export type NestedResource<M extends LucidModel> = {
 
 export interface TransformerConfig<M extends LucidModel> {
   where?: { [key: string]: string }
-  nestedResource?: NestedResource<M>
+  nestedResources?: NestedResourceItem<M>[]
 }
 
 export class QueryPipelineService<Model extends LucidModel> {
-  private query: ModelQueryBuilderContract<Model>
+  private q: ModelQueryBuilderContract<Model>
 
   constructor(initialQuery: ModelQueryBuilderContract<Model>, config?: TransformerConfig<Model>) {
-    this.query = initialQuery
+    this.q = initialQuery
 
-    if (config?.nestedResource) {
-      const { parentRelation, parentPrimaryKey, parentId } = config.nestedResource
-      this.query = this.query.whereHas(parentRelation, (builder) => {
-        builder.where(parentPrimaryKey, parentId)
-      })
-    }
+    if (config?.nestedResources)
+      this.q = this.applyParentRecursively(this.q, config.nestedResources)
+  }
+
+  private applyParentRecursively(
+    query: ModelQueryBuilderContract<LucidModel>,
+    parents: NestedResourceItem<Model>[],
+    index: number = 0
+  ): ModelQueryBuilderContract<any> {
+    const parent = parents[index]
+
+    return query.whereHas(parent.parentRelation as any, (nested) => {
+      nested.where(parent.parentPrimaryKey, parent.parentId)
+
+      if (index + 1 < parents.length) {
+        this.applyParentRecursively(nested, parents, index + 1)
+      }
+    })
   }
 
   transform(
     transformer: (q: ModelQueryBuilderContract<Model>) => ModelQueryBuilderContract<Model>
   ): this {
-    this.query = transformer(this.query)
+    this.q = transformer(this.q)
     return this
   }
 
-  getQuery(): ModelQueryBuilderContract<Model> {
-    return this.query
+  query(): ModelQueryBuilderContract<Model> {
+    return this.q
   }
 
   async executeWithCache(
@@ -47,7 +59,7 @@ export class QueryPipelineService<Model extends LucidModel> {
     executor: (q: ModelQueryBuilderContract<Model>) => Promise<any>
   ): Promise<any> {
     return ControllerService.getOrSetCache(request, ttlSeconds, async () => {
-      return executor(this.query)
+      return executor(this.q)
     })
   }
 }
