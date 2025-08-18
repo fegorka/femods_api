@@ -5,7 +5,7 @@ import Pack from '#models/pack'
 import User from '#models/user'
 import PackItemPolicy from '#policies/pack_item_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import {
   requestIncludeValidator,
@@ -30,7 +30,7 @@ export default class PackItemsController {
       ? this.baseVisibilityQuery()
       : PackItem.query()
 
-    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
+    const pipeline = new TransformerService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -62,7 +62,7 @@ export default class PackItemsController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItem.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -72,7 +72,7 @@ export default class PackItemsController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItem.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -91,7 +91,7 @@ export default class PackItemsController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItem.query().where('id', params.id),
       appMeta?.transformer
     )

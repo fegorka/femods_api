@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackItemSafeStatus from '#models/pack_item_safe_status'
 import PackItemSafeStatusPolicy from '#policies/pack_item_safe_status_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 import {
   requestIncludeValidator,
   requestParamsCuidValidator,
@@ -24,7 +24,7 @@ export default class PackItemSafeStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(PackItemSafeStatus.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(PackItemSafeStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -45,7 +45,7 @@ export default class PackItemSafeStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItemSafeStatus.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -64,7 +64,7 @@ export default class PackItemSafeStatusesController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItemSafeStatus.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -81,7 +81,7 @@ export default class PackItemSafeStatusesController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackItemSafeStatus.query().where('id', params.id),
       appMeta?.transformer
     )

@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import GameVersion from '#models/game_version'
 import GameVersionPolicy from '#policies/game_version_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 import { storeGameVersionValidator, updateGameVersionValidator } from '#validators/game_version'
 import {
   requestIncludeValidator,
@@ -21,7 +21,7 @@ export default class GameVersionsController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(GameVersion.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(GameVersion.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -42,7 +42,7 @@ export default class GameVersionsController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       GameVersion.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -60,7 +60,7 @@ export default class GameVersionsController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       GameVersion.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -77,7 +77,7 @@ export default class GameVersionsController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       GameVersion.query().where('id', params.id),
       appMeta?.transformer
     )

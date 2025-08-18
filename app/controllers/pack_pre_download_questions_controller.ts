@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackPreDownloadQuestion from '#models/pack_pre_download_question'
 import PackPreDownloadQuestionPolicy from '#policies/pack_pre_download_question_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import {
   requestIncludeValidator,
@@ -29,7 +29,7 @@ export default class PackPreDownloadQuestionsController {
       ? this.baseVisibilityQuery()
       : PackPreDownloadQuestion.query()
 
-    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
+    const pipeline = new TransformerService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -61,7 +61,7 @@ export default class PackPreDownloadQuestionsController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackPreDownloadQuestion.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -71,7 +71,7 @@ export default class PackPreDownloadQuestionsController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackPreDownloadQuestion.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -90,7 +90,7 @@ export default class PackPreDownloadQuestionsController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackPreDownloadQuestion.query().where('id', params.id),
       appMeta?.transformer
     )

@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackStatus from '#models/pack_status'
 import PackStatusPolicy from '#policies/pack_status_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import {
   requestIncludeValidator,
@@ -22,7 +22,7 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(PackStatus.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(PackStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -43,7 +43,7 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('show', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackStatus.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -62,7 +62,7 @@ export default class PackStatusesController {
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackStatus.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -80,7 +80,7 @@ export default class PackStatusesController {
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackStatus.query().where('id', params.id),
       appMeta?.transformer
     )

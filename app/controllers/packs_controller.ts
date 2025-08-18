@@ -3,7 +3,7 @@ import Pack from '#models/pack'
 import User from '#models/user'
 import PackPolicy from '#policies/pack_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 import {
   requestIncludeValidator,
   requestPageValidator,
@@ -27,7 +27,7 @@ export default class PacksController {
       ? this.baseVisibilityQuery()
       : Pack.query()
 
-    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
+    const pipeline = new TransformerService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
@@ -73,7 +73,7 @@ export default class PacksController {
     }
 
     const includes = request.input('includes')
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Pack.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, includes))
@@ -83,7 +83,7 @@ export default class PacksController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Pack.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -98,7 +98,7 @@ export default class PacksController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Pack.query().where('id', params.id),
       appMeta?.transformer
     )

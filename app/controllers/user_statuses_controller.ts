@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import UserStatus from '#models/user_status'
 import UserStatusPolicy from '#policies/user_status_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 import {
   requestIncludeValidator,
   requestPageValidator,
@@ -21,7 +21,7 @@ export default class UserStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(UserStatus.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(UserStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -43,7 +43,7 @@ export default class UserStatusesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       UserStatus.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -61,7 +61,7 @@ export default class UserStatusesController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       UserStatus.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -77,7 +77,7 @@ export default class UserStatusesController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       UserStatus.query().where('id', params.id),
       appMeta?.transformer
     )

@@ -4,7 +4,7 @@ import PackReleasePolicy from '#policies/pack_release_policy'
 import User from '#models/user'
 import Pack from '#models/pack'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import {
   requestIncludeValidator,
@@ -29,7 +29,7 @@ export default class PackReleasesController {
       ? this.baseVisibilityQuery()
       : PackRelease.query()
 
-    const pipeline = new QueryPipelineService(initial, appMeta?.transformer)
+    const pipeline = new TransformerService(initial, appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -59,7 +59,7 @@ export default class PackReleasesController {
       return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackRelease.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -70,7 +70,7 @@ export default class PackReleasesController {
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackRelease.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -91,7 +91,7 @@ export default class PackReleasesController {
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       PackRelease.query().where('id', params.id),
       appMeta?.transformer
     )

@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Role from '#models/role'
 import RolePolicy from '#policies/role_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 import {
   requestIncludeValidator,
   requestParamsCuidValidator,
@@ -26,7 +26,7 @@ export default class RolesController {
     const includes = request.input('includes')
     const sort = request.input('sort')
 
-    const pipeline = new QueryPipelineService(Role.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(Role.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, includes))
       .transform((q) => ControllerService.applySorting(q, sort))
 
@@ -46,7 +46,7 @@ export default class RolesController {
     }
 
     const includes = request.input('includes')
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Role.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, includes))
@@ -64,7 +64,7 @@ export default class RolesController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Role.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -80,7 +80,7 @@ export default class RolesController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       Role.query().where('id', params.id),
       appMeta?.transformer
     )

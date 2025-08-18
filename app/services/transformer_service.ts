@@ -16,7 +16,7 @@ export interface TransformerConfig<M extends LucidModel> {
   nestedResources?: NestedResourceItem<M>[]
 }
 
-export class QueryPipelineService<Model extends LucidModel> {
+export class TransformerService<Model extends LucidModel> {
   private q: ModelQueryBuilderContract<Model>
 
   constructor(initialQuery: ModelQueryBuilderContract<Model>, config?: TransformerConfig<Model>) {

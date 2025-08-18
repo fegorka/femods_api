@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import UserPolicy from '#policies/user_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import { updateUserValidator } from '#validators/user'
 import {
@@ -26,7 +26,7 @@ export default class UsersController {
 
     const search = request.input('search', []) as string | string[] | [] // by validators
 
-    const pipeline = new QueryPipelineService(User.query(), appMeta?.transformer)
+    const pipeline = new TransformerService(User.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
@@ -53,7 +53,7 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('show', user))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       User.query().where('id', params.id),
       appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
@@ -63,7 +63,7 @@ export default class UsersController {
 
   async update({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       User.query().where('id', params.id),
       appMeta?.transformer
     )
@@ -79,7 +79,7 @@ export default class UsersController {
 
   async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
     await request.validateUsing(requestParamsCuidValidator('id'))
-    const pipeline = new QueryPipelineService(
+    const pipeline = new TransformerService(
       User.query().where('id', params.id),
       appMeta?.transformer
     )
