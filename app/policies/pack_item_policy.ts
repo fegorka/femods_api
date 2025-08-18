@@ -8,6 +8,7 @@ import PackRelease from '#models/pack_release'
 import PackVisibleLevel from '#models/pack_visible_level'
 import PackStatus from '#models/pack_status'
 import UserStatus from '#models/user_status'
+import env from '#start/env'
 
 export default class PackItemPolicy extends BasePolicy {
   async index(user: User): Promise<AuthorizerResponse> {
@@ -53,7 +54,6 @@ export default class PackItemPolicy extends BasePolicy {
   }
 
   private async getPackByPackItemId(packItemId: string) {
-    if (this.isDisableOnDevelop) return true
     const packRelease = await PackRelease.findByOrFail({ id: packItemId })
     return await Pack.findByOrFail({ id: packRelease.packId })
   }

@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import PackStatus from '#models/pack_status'
 import PackStatusPolicy from '#policies/pack_status_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import {
   requestIncludeValidator,
@@ -11,13 +11,10 @@ import {
   requestParamsCuidValidator,
   requestSortValidator,
 } from '#validators/request'
-import {
-  storePackStatusValidator,
-  updatePackStatusValidator,
-} from '#validators/pack_status'
+import { storePackStatusValidator, updatePackStatusValidator } from '#validators/pack_status'
 
 export default class PackStatusesController {
-  async index({ bouncer, request, response }: HttpContext) {
+  async index({ bouncer, request, response, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestIncludeValidator(PackStatus))
     await request.validateUsing(requestSortValidator(PackStatus))
@@ -25,7 +22,7 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(PackStatus.query())
+    const pipeline = new TransformerService(PackStatus.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -34,8 +31,8 @@ export default class PackStatusesController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackStatus))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -46,8 +43,9 @@ export default class PackStatusesController {
     if (await bouncer.with(PackStatusPolicy).denies('show', requestedPackStatus))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(
-      PackStatus.query().where('id', params.id)
+    const pipeline = new TransformerService(
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
@@ -61,10 +59,15 @@ export default class PackStatusesController {
     await PackStatus.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const requestedPackStatus = await PackStatus.findBy({ id: params.id })
+    const pipeline = new TransformerService(
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackStatus = await pipeline.query().first()
+
     if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('update', requestedPackStatus))
@@ -74,10 +77,15 @@ export default class PackStatusesController {
     await PackStatus.updateOrCreate({ id: requestedPackStatus.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const requestedPackStatus = await PackStatus.findBy({ id: params.id })
+    const pipeline = new TransformerService(
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackStatus = await pipeline.query().first()
+
     if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('destroy', requestedPackStatus))

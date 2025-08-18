@@ -19,8 +19,8 @@
   },
   "scripts": {
     "bump": "standard-version --skip.tag",
-    "release": "npm run build && git flow release start `node bin/nextVersion.js`",
-    "finish": "git flow release finish `node bin/currentVersion.js`",
+    "release": "npm run build && git flow release start `node bin/next_version.js`",
+    "finish": "git flow release finish `node bin/current_version.js`",
     "start": "node bin/server.js",
     "build": "tsc && lint && node ace build",
     "serve": "tsc && node ace serve --watch",
@@ -37,6 +37,7 @@
     "#mails/*": "./app/mails/*.js",
     "#services/*": "./app/services/*.js",
     "#decorators/*": "./app/decorators/*.js",
+    "#types/*": "./types/*.js",
     "#listeners/*": "./app/listeners/*.js",
     "#events/*": "./app/events/*.js",
     "#middleware/*": "./app/middleware/*.js",

@@ -3,6 +3,7 @@ import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 import UserStatus from '#models/user_status'
 import User from '#models/user'
+import env from '#start/env'
 
 export default class UserPolicy extends BasePolicy {
   async index(user: User): Promise<AuthorizerResponse> {
@@ -21,6 +22,10 @@ export default class UserPolicy extends BasePolicy {
       !allowedStatuses.includes(requestedUserStatus.name) &&
       !(await RoleService.userHaveRoleCheck(['extended', 'super'], user))
     )
+  }
+
+  async store(): Promise<AuthorizerResponse> {
+    return false
   }
 
   async update(user: User, requestedUser: User): Promise<AuthorizerResponse> {

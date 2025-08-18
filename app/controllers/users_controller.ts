@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import UserPolicy from '#policies/user_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
 import { updateUserValidator } from '#validators/user'
 import {
@@ -15,7 +15,7 @@ import {
 } from '#validators/request'
 
 export default class UsersController {
-  async index({ bouncer, response, request }: HttpContext) {
+  async index({ bouncer, response, request, appMeta }: HttpContext) {
     await request.validateUsing(requestPageValidator)
     await request.validateUsing(requestSearchValidator)
     await request.validateUsing(requestIncludeValidator(User))
@@ -26,7 +26,7 @@ export default class UsersController {
 
     const search = request.input('search', []) as string | string[] | [] // by validators
 
-    const pipeline = new QueryPipelineService(User.query())
+    const pipeline = new TransformerService(User.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
       .transform((q) =>
@@ -42,8 +42,8 @@ export default class UsersController {
     )
   }
 
-  async show({ auth, bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(User))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -53,17 +53,21 @@ export default class UsersController {
     if (await bouncer.with(UserPolicy).denies('show', user))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(
-      User.query().where('id', params.id)
+    const pipeline = new TransformerService(
+      User.query().where('id', params.id),
+      appMeta?.transformer
     ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const user = await User.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      User.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const user = await pipeline.query().first()
     if (!user) return response.notFound()
 
     if (await bouncer.with(UserPolicy).denies('update', user))
@@ -73,10 +77,13 @@ export default class UsersController {
     await User.updateOrCreate({ id: user.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const user = await User.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      User.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const user = await pipeline.query().first()
     if (!user) return response.notFound()
 
     if (await bouncer.with(UserPolicy).denies('destroy', user))

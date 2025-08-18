@@ -5,7 +5,7 @@ import { MemoryStoreService } from '#services/memory_store_service'
 
 import { Authenticator } from '@adonisjs/auth'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
-import HelperService from "#services/helper_service";
+import HelperService from '#services/helper_service'
 
 export default class ControllerService {
   /**
@@ -22,15 +22,10 @@ export default class ControllerService {
    * @description Applies sorting to query
    */
   static applySorting(query: ModelQueryBuilderContract<any>, sort: string | undefined) {
-    console.log('0')
-    console.log({ sort_name: sort })
     if (!sort) return query
 
     const direction = sort.startsWith('>') ? 'desc' : 'asc'
     const column = sort.replace(/^[><]/, '')
-
-    console.log('1')
-    console.log({ column_name: column })
 
     return query.orderBy(column, direction)
   }

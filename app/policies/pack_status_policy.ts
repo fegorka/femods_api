@@ -3,6 +3,7 @@ import { allowGuest, BasePolicy } from '@adonisjs/bouncer'
 import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 import RoleService from '#services/role_service'
 import PackStatus from '#models/pack_status'
+import env from '#start/env'
 
 export default class PackStatusPolicy extends BasePolicy {
   async index(_user: User): Promise<AuthorizerResponse> {

@@ -1,88 +1,93 @@
-import type { HttpContext } from "@adonisjs/core/http";
-import GameVersion from "#models/game_version";
-import GameVersionPolicy from "#policies/game_version_policy";
-import ControllerService from "#services/controller_service";
-import { QueryPipelineService } from "#services/query_pipeline_service";
+import type { HttpContext } from '@adonisjs/core/http'
+import GameVersion from '#models/game_version'
+import GameVersionPolicy from '#policies/game_version_policy'
+import ControllerService from '#services/controller_service'
+import { TransformerService } from '#services/transformer_service'
+import { storeGameVersionValidator, updateGameVersionValidator } from '#validators/game_version'
 import {
   requestIncludeValidator,
   requestParamsCuidValidator,
   requestPageValidator,
-  requestSortValidator
-} from "#validators/request";
-import {
-  storeGameVersionValidator,
-  updateGameVersionValidator
-} from "#validators/game_version";
+  requestSortValidator,
+} from '#validators/request'
 
 export default class GameVersionsController {
-  public async index({ bouncer, response, request }: HttpContext) {
-    await request.validateUsing(requestPageValidator);
-    await request.validateUsing(requestIncludeValidator(GameVersion));
-    await request.validateUsing(requestSortValidator(GameVersion));
+  async index({ bouncer, response, request, appMeta }: HttpContext) {
+    await request.validateUsing(requestPageValidator)
+    await request.validateUsing(requestIncludeValidator(GameVersion))
+    await request.validateUsing(requestSortValidator(GameVersion))
 
-    if (await bouncer.with(GameVersionPolicy).denies("index")) {
-      return response.forbidden("Insufficient permissions");
+    if (await bouncer.with(GameVersionPolicy).denies('index')) {
+      return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(GameVersion.query())
-      .transform((q) => ControllerService.includeRelations(q, request.input("includes")))
-      .transform((q) => ControllerService.applySorting(q, request.input("sort")));
+    const pipeline = new TransformerService(GameVersion.query(), appMeta?.transformer)
+      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+      .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
     return pipeline.executeWithCache(request, 120, (q) =>
-      q.paginate(request.input("page"), request.input("limit"))
-    );
+      q.paginate(request.input('page'), request.input('limit'))
+    )
   }
 
-  public async show({ auth, bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator);
-    await request.validateUsing(requestIncludeValidator(GameVersion));
-    await ControllerService.authenticateOrSkipForGuest(auth, request);
+  async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    await request.validateUsing(requestIncludeValidator(GameVersion))
+    await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    const gameVersion = await GameVersion.findBy({ id: params.id });
-    if (!gameVersion) return response.notFound();
+    const gameVersion = await GameVersion.findBy({ id: params.id })
+    if (!gameVersion) return response.notFound()
 
-    if (await bouncer.with(GameVersionPolicy).denies("show", gameVersion)) {
-      return response.forbidden("Insufficient permissions");
+    if (await bouncer.with(GameVersionPolicy).denies('show', gameVersion)) {
+      return response.forbidden('Insufficient permissions')
     }
 
-    const pipeline = new QueryPipelineService(GameVersion.query().where("id", params.id))
-      .transform((q) => ControllerService.includeRelations(q, request.input("includes")));
+    const pipeline = new TransformerService(
+      GameVersion.query().where('id', params.id),
+      appMeta?.transformer
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
-    return pipeline.executeWithCache(request, 120, (q) => q.first());
+    return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  public async store({ bouncer, response, request }: HttpContext) {
-    if (await bouncer.with(GameVersionPolicy).denies("store")) {
-      return response.forbidden("Insufficient permissions");
+  async store({ bouncer, response, request }: HttpContext) {
+    if (await bouncer.with(GameVersionPolicy).denies('store')) {
+      return response.forbidden('Insufficient permissions')
     }
-    const payload = await request.validateUsing(storeGameVersionValidator);
-    await GameVersion.create(payload);
+    const payload = await request.validateUsing(storeGameVersionValidator)
+    await GameVersion.create(payload)
   }
 
-  public async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator);
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      GameVersion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const gameVersion = await pipeline.query().first()
+    if (!gameVersion) return response.notFound()
 
-    const gameVersion = await GameVersion.findBy({ id: params.id });
-    if (!gameVersion) return response.notFound();
-
-    if (await bouncer.with(GameVersionPolicy).denies("update", gameVersion)) {
-      return response.forbidden("Insufficient permissions");
+    if (await bouncer.with(GameVersionPolicy).denies('update', gameVersion)) {
+      return response.forbidden('Insufficient permissions')
     }
 
-    const payload = await request.validateUsing(updateGameVersionValidator(gameVersion.id));
-    await GameVersion.updateOrCreate({ id: gameVersion.id }, payload);
+    const payload = await request.validateUsing(updateGameVersionValidator(gameVersion.id))
+    await GameVersion.updateOrCreate({ id: gameVersion.id }, payload)
   }
 
-  public async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator);
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      GameVersion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const gameVersion = await pipeline.query().first()
+    if (!gameVersion) return response.notFound()
 
-    const gameVersion = await GameVersion.findBy({ id: params.id });
-    if (!gameVersion) return response.notFound();
-
-    if (await bouncer.with(GameVersionPolicy).denies("destroy", gameVersion)) {
-      return response.forbidden("Insufficient permissions");
+    if (await bouncer.with(GameVersionPolicy).denies('destroy', gameVersion)) {
+      return response.forbidden('Insufficient permissions')
     }
 
-    return gameVersion.delete();
+    return gameVersion.delete()
   }
 }

@@ -3,12 +3,9 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Tag from '#models/tag'
 import TagPolicy from '#policies/tag_policy'
 import ControllerService from '#services/controller_service'
-import { QueryPipelineService } from '#services/query_pipeline_service'
+import { TransformerService } from '#services/transformer_service'
 
-import {
-  storeTagValidator,
-  updateTagValidator,
-} from '#validators/tag'
+import { storeTagValidator, updateTagValidator } from '#validators/tag'
 
 import {
   requestIncludeValidator,
@@ -18,7 +15,7 @@ import {
 } from '#validators/request'
 
 export default class TagsController {
-  async index({ auth, bouncer, request, response }: HttpContext) {
+  async index({ auth, bouncer, request, response, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
     await request.validateUsing(requestPageValidator)
@@ -28,7 +25,7 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('index'))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(Tag.query())
+    const pipeline = new TransformerService(Tag.query(), appMeta?.transformer)
       .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
       .transform((q) => ControllerService.applySorting(q, request.input('sort')))
 
@@ -37,10 +34,10 @@ export default class TagsController {
     )
   }
 
-  async show({ auth, bouncer, request, response, params }: HttpContext) {
+  async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(Tag))
 
     const requestedTag = await Tag.findBy({ id: params.id })
@@ -49,8 +46,10 @@ export default class TagsController {
     if (await bouncer.with(TagPolicy).denies('show', requestedTag))
       return response.forbidden('Insufficient permissions')
 
-    const pipeline = new QueryPipelineService(Tag.query().where('id', params.id))
-      .transform((q) => ControllerService.includeRelations(q, request.input('includes')))
+    const pipeline = new TransformerService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    ).transform((q) => ControllerService.includeRelations(q, request.input('includes')))
 
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
@@ -63,10 +62,13 @@ export default class TagsController {
     await Tag.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedTag = await Tag.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedTag = await pipeline.query().first()
     if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('update', requestedTag))
@@ -76,10 +78,13 @@ export default class TagsController {
     await Tag.updateOrCreate({ id: requestedTag.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedTag = await Tag.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new TransformerService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedTag = await pipeline.query().first()
     if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('destroy', requestedTag))
