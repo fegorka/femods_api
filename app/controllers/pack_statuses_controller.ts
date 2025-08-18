@@ -32,7 +32,7 @@ export default class PackStatusesController {
   }
 
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackStatus))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -59,10 +59,15 @@ export default class PackStatusesController {
     await PackStatus.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const requestedPackStatus = await PackStatus.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackStatus = await pipeline.query().first()
+
     if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('update', requestedPackStatus))
@@ -72,10 +77,15 @@ export default class PackStatusesController {
     await PackStatus.updateOrCreate({ id: requestedPackStatus.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const requestedPackStatus = await PackStatus.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackStatus = await pipeline.query().first()
+
     if (!requestedPackStatus) return response.notFound()
 
     if (await bouncer.with(PackStatusPolicy).denies('destroy', requestedPackStatus))

@@ -31,7 +31,7 @@ export default class GameVersionsController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(GameVersion))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -58,10 +58,13 @@ export default class GameVersionsController {
     await GameVersion.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const gameVersion = await GameVersion.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      GameVersion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const gameVersion = await pipeline.query().first()
     if (!gameVersion) return response.notFound()
 
     if (await bouncer.with(GameVersionPolicy).denies('update', gameVersion)) {
@@ -72,10 +75,13 @@ export default class GameVersionsController {
     await GameVersion.updateOrCreate({ id: gameVersion.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const gameVersion = await GameVersion.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      GameVersion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const gameVersion = await pipeline.query().first()
     if (!gameVersion) return response.notFound()
 
     if (await bouncer.with(GameVersionPolicy).denies('destroy', gameVersion)) {

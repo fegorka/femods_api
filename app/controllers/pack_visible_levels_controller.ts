@@ -35,7 +35,7 @@ export default class PackVisibleLevelsController {
   }
 
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackVisibleLevel))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -61,12 +61,16 @@ export default class PackVisibleLevelsController {
     await PackVisibleLevel.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const packVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackVisibleLevel.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const packVisibleLevel = await pipeline.query().first()
+
     if (!packVisibleLevel) return response.notFound()
-
     if (await bouncer.with(PackVisibleLevelPolicy).denies('update', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
 
@@ -76,12 +80,16 @@ export default class PackVisibleLevelsController {
     await PackVisibleLevel.updateOrCreate({ id: packVisibleLevel.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const packVisibleLevel = await PackVisibleLevel.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackVisibleLevel.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const packVisibleLevel = await pipeline.query().first()
+
     if (!packVisibleLevel) return response.notFound()
-
     if (await bouncer.with(PackVisibleLevelPolicy).denies('destroy', packVisibleLevel))
       return response.forbidden('Insufficient permissions')
 

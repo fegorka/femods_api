@@ -52,7 +52,7 @@ export default class PackItemsController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackItem))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -70,10 +70,13 @@ export default class PackItemsController {
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const item = await PackItem.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItem.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const item = await pipeline.query().first()
     if (!item) return response.notFound()
     if (await bouncer.with(PackItemPolicy).denies('update', item)) {
       return response.forbidden('Insufficient permissions')
@@ -86,10 +89,13 @@ export default class PackItemsController {
     await PackItem.updateOrCreate({ id: item.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const item = await PackItem.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItem.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const item = await pipeline.query().first()
     if (!item) return response.notFound()
     if (await bouncer.with(PackItemPolicy).denies('destroy', item)) {
       return response.forbidden('Insufficient permissions')

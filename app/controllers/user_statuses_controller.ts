@@ -31,7 +31,7 @@ export default class UserStatusesController {
   }
 
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(UserStatus))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -59,13 +59,14 @@ export default class UserStatusesController {
     await UserStatus.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const status = await UserStatus.findBy({ id: params.id })
-    if (!status) {
-      return response.notFound()
-    }
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      UserStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const status = await pipeline.query().first()
+    if (!status) return response.notFound()
     if (await bouncer.with(UserStatusPolicy).denies('update', status)) {
       return response.forbidden('Insufficient permissions')
     }
@@ -74,13 +75,14 @@ export default class UserStatusesController {
     await UserStatus.updateOrCreate({ id: status.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const status = await UserStatus.findBy({ id: params.id })
-    if (!status) {
-      return response.notFound()
-    }
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      UserStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const status = await pipeline.query().first()
+    if (!status) return response.notFound()
     if (await bouncer.with(UserStatusPolicy).denies('destroy', status)) {
       return response.forbidden('Insufficient permissions')
     }

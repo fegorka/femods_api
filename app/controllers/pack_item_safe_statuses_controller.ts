@@ -34,7 +34,7 @@ export default class PackItemSafeStatusesController {
   }
 
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackItemSafeStatus))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -62,10 +62,13 @@ export default class PackItemSafeStatusesController {
     await PackItemSafeStatus.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const entity = await PackItemSafeStatus.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItemSafeStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const entity = await pipeline.query().first()
     if (!entity) return response.notFound()
 
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('update', entity)) {
@@ -76,10 +79,13 @@ export default class PackItemSafeStatusesController {
     await PackItemSafeStatus.updateOrCreate({ id: entity.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const entity = await PackItemSafeStatus.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItemSafeStatus.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const entity = await pipeline.query().first()
     if (!entity) return response.notFound()
 
     if (await bouncer.with(PackItemSafeStatusPolicy).denies('destroy', entity)) {

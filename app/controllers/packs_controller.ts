@@ -11,10 +11,7 @@ import {
   requestSearchValidator,
   requestSortValidator,
 } from '#validators/request'
-import {
-  storePackValidator,
-  updatePackValidator,
-} from '#validators/pack'
+import { storePackValidator, updatePackValidator } from '#validators/pack'
 
 export default class PacksController {
   async index({ auth, bouncer, request, appMeta }: HttpContext) {
@@ -65,7 +62,7 @@ export default class PacksController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(Pack))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -84,9 +81,13 @@ export default class PacksController {
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-    const pack = await Pack.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      Pack.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const pack = await pipeline.query().first()
     if (!pack) return response.notFound()
     if (await bouncer.with(PackPolicy).denies('update', pack)) {
       return response.forbidden('Insufficient permissions')
@@ -95,9 +96,13 @@ export default class PacksController {
     await Pack.updateOrCreate({ id: pack.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-    const pack = await Pack.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      Pack.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const pack = await pipeline.query().first()
     if (!pack) return response.notFound()
     if (await bouncer.with(PackPolicy).denies('destroy', pack)) {
       return response.forbidden('Insufficient permissions')

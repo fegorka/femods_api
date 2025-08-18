@@ -49,7 +49,7 @@ export default class PackReleasesController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackRelease))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -67,10 +67,15 @@ export default class PackReleasesController {
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const packRelease = await PackRelease.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackRelease.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const packRelease = await pipeline.query().first()
+
     if (!packRelease) return response.notFound()
     if (await bouncer.with(PackReleasePolicy).denies('update', packRelease)) {
       return response.forbidden('Insufficient permissions')
@@ -83,10 +88,15 @@ export default class PackReleasesController {
     await PackRelease.updateOrCreate({ id: packRelease.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
 
-    const packRelease = await PackRelease.findBy({ id: params.id })
+    const pipeline = new QueryPipelineService(
+      PackRelease.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const packRelease = await pipeline.query().first()
+
     if (!packRelease) return response.notFound()
     if (await bouncer.with(PackReleasePolicy).denies('destroy', packRelease)) {
       return response.forbidden('Insufficient permissions')

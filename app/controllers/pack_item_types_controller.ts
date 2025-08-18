@@ -33,7 +33,7 @@ export default class PackItemTypesController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackItemType))
 
     await ControllerService.authenticateOrSkipForGuest(auth, request)
@@ -60,10 +60,13 @@ export default class PackItemTypesController {
     await PackItemType.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedPackItemType = await PackItemType.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItemType.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackItemType = await pipeline.query().first()
     if (!requestedPackItemType) return response.notFound()
 
     if (await bouncer.with(PackItemTypePolicy).denies('update', requestedPackItemType))
@@ -75,10 +78,13 @@ export default class PackItemTypesController {
     await PackItemType.updateOrCreate({ id: requestedPackItemType.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedPackItemType = await PackItemType.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackItemType.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackItemType = await pipeline.query().first()
     if (!requestedPackItemType) return response.notFound()
 
     if (await bouncer.with(PackItemTypePolicy).denies('destroy', requestedPackItemType))

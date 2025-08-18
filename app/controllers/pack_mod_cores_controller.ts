@@ -31,7 +31,7 @@ export default class PackModCoresController {
   }
 
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackModCore))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -59,10 +59,13 @@ export default class PackModCoresController {
     await PackModCore.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedPackModCore = await PackModCore.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackModCore.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackModCore = await pipeline.query().first()
     if (!requestedPackModCore) return response.notFound()
 
     if (await bouncer.with(PackModCorePolicy).denies('update', requestedPackModCore)) {
@@ -74,10 +77,13 @@ export default class PackModCoresController {
     await PackModCore.updateOrCreate({ id: requestedPackModCore.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedPackModCore = await PackModCore.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackModCore.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedPackModCore = await pipeline.query().first()
     if (!requestedPackModCore) return response.notFound()
 
     if (await bouncer.with(PackModCorePolicy).denies('destroy', requestedPackModCore)) {

@@ -51,7 +51,7 @@ export default class PackPreDownloadQuestionsController {
   }
 
   async show({ auth, bouncer, response, request, params, appMeta }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(PackPreDownloadQuestion))
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
@@ -69,10 +69,13 @@ export default class PackPreDownloadQuestionsController {
     return pipeline.executeWithCache(request, 120, (q) => q.first())
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const question = await PackPreDownloadQuestion.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackPreDownloadQuestion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const question = await pipeline.query().first()
     if (!question) return response.notFound()
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('update', question)) {
       return response.forbidden('Insufficient permissions')
@@ -85,10 +88,13 @@ export default class PackPreDownloadQuestionsController {
     await PackPreDownloadQuestion.updateOrCreate({ id: question.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const question = await PackPreDownloadQuestion.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      PackPreDownloadQuestion.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const question = await pipeline.query().first()
     if (!question) return response.notFound()
     if (await bouncer.with(PackPreDownloadQuestionPolicy).denies('destroy', question)) {
       return response.forbidden('Insufficient permissions')

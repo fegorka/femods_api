@@ -37,7 +37,7 @@ export default class TagsController {
   async show({ auth, bouncer, request, response, params, appMeta }: HttpContext) {
     await ControllerService.authenticateOrSkipForGuest(auth, request)
 
-    await request.validateUsing(requestParamsCuidValidator)
+    await request.validateUsing(requestParamsCuidValidator('id'))
     await request.validateUsing(requestIncludeValidator(Tag))
 
     const requestedTag = await Tag.findBy({ id: params.id })
@@ -62,10 +62,13 @@ export default class TagsController {
     await Tag.create(payload)
   }
 
-  async update({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedTag = await Tag.findBy({ id: params.id })
+  async update({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedTag = await pipeline.query().first()
     if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('update', requestedTag))
@@ -75,10 +78,13 @@ export default class TagsController {
     await Tag.updateOrCreate({ id: requestedTag.id }, payload)
   }
 
-  async destroy({ bouncer, response, request, params }: HttpContext) {
-    await request.validateUsing(requestParamsCuidValidator)
-
-    const requestedTag = await Tag.findBy({ id: params.id })
+  async destroy({ bouncer, response, request, params, appMeta }: HttpContext) {
+    await request.validateUsing(requestParamsCuidValidator('id'))
+    const pipeline = new QueryPipelineService(
+      Tag.query().where('id', params.id),
+      appMeta?.transformer
+    )
+    const requestedTag = await pipeline.query().first()
     if (!requestedTag) return response.notFound()
 
     if (await bouncer.with(TagPolicy).denies('destroy', requestedTag))
